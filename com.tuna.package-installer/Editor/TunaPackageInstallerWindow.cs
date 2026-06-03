@@ -7,28 +7,18 @@ namespace Tuna.PackageInstaller.Editor
 {
     public sealed class TunaPackageInstallerWindow : EditorWindow
     {
-        private const string TunaGitUrl = "https://github.com/zed3132/Tuna.git";
+        private const string TunaGitUrl = "https://github.com/anhtuan14072002/Core.git";
 
         private readonly List<PackageInfo> _tunaOnlyPackages = new()
         {
-            new("Tuna / Ability",      "com.tuna.ability"),
-            new("Tuna / Attribute",    "com.tuna.attribute"),
-            new("Tuna / Camera",       "com.tuna.camera"),
             new("Tuna / Common",       "com.tuna.common"),
             new("Tuna / Config",       "com.tuna.config"),
             new("Tuna / Core",         "com.tuna.core"),
             new("Tuna / Data",         "com.tuna.data"),
-            new("Tuna / Event",        "com.tuna.event"),
-            new("Tuna / Input",        "com.tuna.input"),
-            new("Tuna / Mono",         "com.tuna.mono"),
-            new("Tuna / Random",       "com.tuna.random"),
-            new("Tuna / Scene",        "com.tuna.scene"),
-            new("Tuna / Setting",      "com.tuna.setting"),
-            new("Tuna / StateMachine", "com.tuna.statemachine"),
-            new("Tuna / Tag",          "com.tuna.tag"),
-            new("Tuna / Tracker",      "com.tuna.tracker"),
-            new("Tuna / Tutorial",     "com.tuna.tutorial"),
             new("Tuna / UI",           "com.tuna.ui"),
+            new("Tuna / V",           "com.tuna.v"),
+            new("Tuna / Zenject",           "com.tuna.zenject"),
+            new("Tuna / Custom",           "com.tuna.custom"),
         };
 
         private readonly List<PackageInfo> _thirdPartyOnlyPackages = new()
@@ -61,7 +51,7 @@ namespace Tuna.PackageInstaller.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Tools/Tuna/Package Installer")]
+        [MenuItem("TunaCore/Package Installer")]
         private static void Open()
         {
             GetWindow<TunaPackageInstallerWindow>("Tuna Installer");
@@ -255,3 +245,4 @@ namespace Tuna.PackageInstaller.Editor
         }
     }
 }
+
