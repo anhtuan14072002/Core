@@ -8,7 +8,6 @@ namespace Tuna.PackageInstaller.Editor
     public sealed class TunaPackageInstallerWindow : EditorWindow
     {
         private const string TunaGitUrl = "https://github.com/anhtuan14072002/Core.git";
-        private const string InstallerUrl = TunaGitUrl + "?path=/com.tuna.package-installer";
 
         private readonly List<PackageInfo> _tunaOnlyPackages = new()
         {
@@ -65,16 +64,6 @@ namespace Tuna.PackageInstaller.Editor
             EditorGUILayout.LabelField(
                 "Tuna Package Installer",
                 EditorStyles.boldLabel);
-
-            EditorGUILayout.HelpBox(
-                "Install this tool with URL: " + InstallerUrl + "\nOnly selected packages in this window will be installed.",
-                MessageType.Info);
-
-            if (GUILayout.Button("Copy Installer URL", GUILayout.Height(24)))
-            {
-                EditorGUIUtility.systemCopyBuffer = InstallerUrl;
-                Debug.Log("[Tuna Installer] Copied installer URL: " + InstallerUrl);
-            }
 
             GUILayout.Space(6);
 
