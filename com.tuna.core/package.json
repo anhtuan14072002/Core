@@ -1,0 +1,13 @@
+{
+  "displayName": "Tuna Core",
+  "description": "",
+  "dependencies": {
+  },
+  "name": "com.tuna.core",
+  "author": {
+    "name": "TunaPC"
+  },
+  "unity": "2020.3",
+  "unityRelease": "0f1",
+  "version": "0.0.1"
+}

@@ -1,0 +1,17 @@
+{
+    "name": "com.tuna.v.runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2c3f48364a5004fd3a152fbdf5fea703",
+        "GUID:06ab1c341392b4a318f67b84e0da6aab"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,19 @@
+{
+  "name": "com.amlovey.yade",
+  "displayName": "Yade Sheet",
+  "version": "1.4.7",
+  "unity": "2019.3",
+  "description": "Yade Sheet is a spreadsheets based data tool, it provides easy to use spreadsheet editor and data access runtime.",
+  "keywords": [
+    "Google Sheets",
+    "Data Editor",
+    "SpreadSheets",
+    "Excel"
+  ],
+  "category": "Tools",
+  "author": {
+    "name": "AMLOVEY",
+    "email": "amlovey@qq.com",
+    "url": "http://www.amlovey.com"
+  }
+}

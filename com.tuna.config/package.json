@@ -1,0 +1,13 @@
+{
+  "displayName": "Tuna Config",
+  "description": "",
+  "dependencies": {
+  },
+  "name": "com.tuna.config",
+  "author": {
+    "name": "TunaPC"
+  },
+  "unity": "2020.3",
+  "unityRelease": "0f1",
+  "version": "0.0.1"
+}

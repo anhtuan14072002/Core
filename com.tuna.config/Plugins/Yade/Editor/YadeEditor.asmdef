@@ -1,0 +1,17 @@
+{
+    "name": "YadeEditor",
+    "references": [
+        "GUID:12787d5b58a684f5bbc200342ed1b49d"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

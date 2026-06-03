@@ -1,0 +1,17 @@
+{
+    "name": "com.tuna.comon.runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:57a0b9bc628ab4740af4b6f1f0b2e134",
+        "GUID:80ecb87cae9c44d19824e70ea7229748"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

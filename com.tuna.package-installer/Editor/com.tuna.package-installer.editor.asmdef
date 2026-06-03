@@ -1,0 +1,18 @@
+{
+    "name": "com.tuna.package-installer.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1686c652eab7e2d49a1396553d211f24"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
