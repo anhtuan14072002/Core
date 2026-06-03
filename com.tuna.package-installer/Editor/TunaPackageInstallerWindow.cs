@@ -8,17 +8,18 @@ namespace Tuna.PackageInstaller.Editor
     public sealed class TunaPackageInstallerWindow : EditorWindow
     {
         private const string TunaGitUrl = "https://github.com/anhtuan14072002/Core.git";
+        private const string InstallerUrl = TunaGitUrl + "?path=/com.tuna.package-installer";
 
         private readonly List<PackageInfo> _tunaOnlyPackages = new()
         {
-            new("Tuna / Common",       "com.tuna.common"),
+            new("Tuna / Comon",        "com.tuna.comon"),
             new("Tuna / Config",       "com.tuna.config"),
             new("Tuna / Core",         "com.tuna.core"),
             new("Tuna / Data",         "com.tuna.data"),
             new("Tuna / UI",           "com.tuna.ui"),
-            new("Tuna / V",           "com.tuna.v"),
-            new("Tuna / Zenject",           "com.tuna.zenject"),
-            new("Tuna / Custom",           "com.tuna.custom"),
+            new("Tuna / V",            "com.tuna.v"),
+            new("Tuna / Zenject",      "com.tuna.zenject"),
+            new("Tuna / Custom",       "com.tuna.custom"),
         };
 
         private readonly List<PackageInfo> _thirdPartyOnlyPackages = new()
@@ -66,8 +67,14 @@ namespace Tuna.PackageInstaller.Editor
                 EditorStyles.boldLabel);
 
             EditorGUILayout.HelpBox(
-                "Tick package cần cài rồi bấm Install Selected.",
+                "Install this tool with URL: " + InstallerUrl + "\nOnly selected packages in this window will be installed.",
                 MessageType.Info);
+
+            if (GUILayout.Button("Copy Installer URL", GUILayout.Height(24)))
+            {
+                EditorGUIUtility.systemCopyBuffer = InstallerUrl;
+                Debug.Log("[Tuna Installer] Copied installer URL: " + InstallerUrl);
+            }
 
             GUILayout.Space(6);
 
@@ -235,7 +242,7 @@ namespace Tuna.PackageInstaller.Editor
                 string displayName,
                 string value,
                 PackageSource source = PackageSource.TunaRepo,
-                bool selected = true)
+                bool selected = false)
             {
                 DisplayName = displayName;
                 Value = value;
