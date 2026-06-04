@@ -17,7 +17,7 @@ namespace Tuna.PackageInstaller.Editor
             new("Tuna / Data",         "com.tuna.data"),
             new("Tuna / UI",           "com.tuna.ui"),
             new("Tuna / V",            "com.tuna.v"),
-            new("Tuna / Zenject",      "com.tuna.zenject"),
+            // new("Tuna / Zenject",      "com.tuna.zenject"),
             new("Tuna / Custom",       "com.tuna.custom"),
         };
 
