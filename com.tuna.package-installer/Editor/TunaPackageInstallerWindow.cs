@@ -38,10 +38,11 @@ namespace Tuna.PackageInstaller.Editor
                 "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity",
                 PackageSource.GitUrl),
 
-            new(
+            /*new(
                 "PrimeTween",
                 "https://github.com/KyryloKuzyk/PrimeTween.git",
                 PackageSource.GitUrl),
+                */
 
             new(
                 "Alchemy",
