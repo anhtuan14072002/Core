@@ -35,19 +35,8 @@ MonoBehaviour:
     referenceMode: 2
     serializationDepthLimit: 64
     assemblyNames:
+    - Assembly-CSharp-firstpass
     - Assembly-CSharp
-    - EasySave3
-    - Lofelt.NiceVibrations
-    - ParticleImage
-    - PrimeTween.Debug
-    - PrimeTween.Demo
-    - PrimeTween.Runtime
-    - UniTask
-    - UniTask.Addressables
-    - UniTask.DOTween
-    - UniTask.Linq
-    - UniTask.TextMeshPro
-    - YadeRuntime
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0
   autoUpdateReferences: 1

@@ -1,5 +1,6 @@
 {
     "name": "YadeEditor",
+    "rootNamespace": "",
     "references": [
         "GUID:12787d5b58a684f5bbc200342ed1b49d"
     ],
