@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2887931415843395211}
-  - component: {fileID: 803602736429270058}
+  - component: {fileID: 1141539105908555158}
   m_Layer: 0
   m_Name: Game Loading
   m_TagString: Untagged
@@ -32,7 +32,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &803602736429270058
+--- !u!114 &1141539105908555158
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,10 +41,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2970264295319577435}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c36cc4ba77f9904e9c2ee805bcc4533, type: 3}
+  m_Script: {fileID: 11500000, guid: 443d92c878c848dc81910265741874f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   initializer: {fileID: 0}
   loadingGraphics: {fileID: 0}
   useManualControl: 0
-  checkNetworkConnection: 0
+  checkNetworkConnection: 1
