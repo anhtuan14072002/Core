@@ -13,6 +13,8 @@ namespace Core
 
         [SerializeField] private bool _isOpenSetting;
 
+        [SerializeField] private bool _canPlayOffline;
+
         [SerializeField] private float _checkInterval = 2f;
 
         [SerializeField] private string _checkUrl = "https://google.com/";
@@ -29,11 +31,20 @@ namespace Core
                 _tryAgain.onClick.AddListener(OnTryAgainClicked);
             }
 
-            SetPopupActive(false);
+            if (_canPlayOffline)
+            {
+                SetPopupActive(false);
+            }
         }
 
         private void OnEnable()
         {
+            if (_canPlayOffline)
+            {
+                SetPopupActive(false);
+                return;
+            }
+
             _checkInternetCoroutine = StartCoroutine(CheckInternetLoop());
         }
 
@@ -63,6 +74,12 @@ namespace Core
 
         private void OnTryAgainClicked()
         {
+            if (_canPlayOffline)
+            {
+                SetPopupActive(false);
+                return;
+            }
+
             if (_isOpenSetting)
             {
                 OpenSetting();
@@ -77,6 +94,12 @@ namespace Core
 
         private IEnumerator CheckInternetAndUpdatePopup()
         {
+            if (_canPlayOffline)
+            {
+                SetPopupActive(false);
+                yield break;
+            }
+
             _isChecking = true;
 
             bool hasInternet = false;
