@@ -16,6 +16,7 @@ namespace Core
         [SerializeField] Image loadingImage;
         [SerializeField] TextMeshProUGUI loadingMessageText;
         [SerializeField] TextMeshProUGUI loadingPercentageText;
+        
         [SerializeField] GameObject loadingbarObject;
         [SerializeField] Button retryButton;
 
