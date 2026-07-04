@@ -48,6 +48,11 @@ namespace Tuna.PackageInstaller.Editor
                 "Alchemy",
                 "https://github.com/yn01-dev/Alchemy.git?path=/Alchemy/Assets/Alchemy",
                 PackageSource.GitUrl),
+            
+            new(
+                "MCP",
+                "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+                PackageSource.GitUrl),
         };
 
         private Vector2 _scroll;

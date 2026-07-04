@@ -38,6 +38,7 @@ MonoBehaviour:
     - Assembly-CSharp
     - EasySave3
     - Lofelt.NiceVibrations
+    - MCPForUnity.Runtime
     - ParticleImage
     - PrimeTween.Debug
     - PrimeTween.Demo
