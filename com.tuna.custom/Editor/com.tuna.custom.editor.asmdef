@@ -1,0 +1,16 @@
+{
+    "name": "com.tuna.custom.editor",
+    "rootNamespace": "",
+    "references": [
+        "com.tuna.custom.runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

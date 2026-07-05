@@ -7,6 +7,7 @@ namespace Core
     public class GameLoading : MonoBehaviour
     {
         private const float MINIMUM_LOADING_TIME = 2.0f;
+        private const float CONNECTION_RETRY_INTERVAL = 2.0f;
 
         private static GameLoading gameLoading;
 
@@ -23,8 +24,6 @@ namespace Core
 
         private static string loadingMessage;
 
-        private Coroutine initCoroutine;
-
         public static int LoadingSceneBuildIndex = -1;
 
         private void Awake()
@@ -33,9 +32,9 @@ namespace Core
 
             DontDestroyOnLoad(gameObject);
             
-            loadingGraphics.Init(this);
+            loadingGraphics.Init();
 
-            initCoroutine = StartCoroutine(BootstrapCoroutine());
+            StartCoroutine(BootstrapCoroutine());
         }
 
         private IEnumerator BootstrapCoroutine()
@@ -48,17 +47,8 @@ namespace Core
             yield return ConnectionCheckCoroutine();
         }
 
-        public void RetryConnection()
-        {
-            if(initCoroutine == null)
-            {
-                initCoroutine = StartCoroutine(ConnectionCheckCoroutine());
-            }
-        }
-
         private IEnumerator ConnectionCheckCoroutine()
         {
-            loadingGraphics.HideErrorMessage();
             loadingGraphics.SetLoadingState(0.0f, "Checking connection..");
 
             if(checkNetworkConnection)
@@ -66,17 +56,17 @@ namespace Core
                 bool isConnected = false;
 
                 NetworkConnection networkConnection = new NetworkConnection("https://google.com/");
-                IEnumerator connectionCheck = networkConnection.CheckConnection((state) => isConnected = state);
-
-                yield return connectionCheck;
-
-                if (!isConnected)
+                while (!isConnected)
                 {
-                    loadingGraphics.ShowErrorMessage("Connection error");
+                    IEnumerator connectionCheck = networkConnection.CheckConnection((state) => isConnected = state);
 
-                    initCoroutine = null;
+                    yield return connectionCheck;
 
-                    yield break;
+                    if (isConnected) continue;
+
+                    loadingGraphics.SetLoadingState(0.0f, "Connection error");
+                    yield return new WaitForSecondsRealtime(CONNECTION_RETRY_INTERVAL);
+                    loadingGraphics.SetLoadingState(0.0f, "Checking connection..");
                 }
             }
             

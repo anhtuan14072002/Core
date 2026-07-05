@@ -18,45 +18,16 @@ namespace Core
         [SerializeField] TextMeshProUGUI loadingPercentageText;
         
         [SerializeField] GameObject loadingbarObject;
-        [SerializeField] Button retryButton;
 
-        private GameLoading loadingController;
-
-        public void Init(GameLoading loadingController)
+        public void Init()
         {
-            this.loadingController = loadingController;
-
             DontDestroyOnLoad(gameObject);
 
             canvasScaler.MatchSize();
 
-            retryButton.onClick.AddListener(OnRetryButtonClicked);
-            retryButton.gameObject.SetActive(false);
-
             loadingbarObject.SetActive(true);
 
             SetLoadingState(0.0f, "Loading..");
-        }
-
-        public void ShowErrorMessage(string message)
-        {
-            loadingbarObject.SetActive(false);
-            retryButton.gameObject.SetActive(true);
-
-            loadingMessageText.text = message;
-        }
-
-        public void HideErrorMessage()
-        {
-            loadingbarObject.SetActive(true);
-            retryButton.gameObject.SetActive(false);
-
-            loadingMessageText.text = "Loading..";
-        }
-
-        private void OnRetryButtonClicked()
-        {
-            loadingController.RetryConnection();
         }
 
         public void SetLoadingState(float state, string message)

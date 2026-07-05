@@ -70,7 +70,7 @@ namespace Tuna.PackageInstaller.Editor
             EditorGUILayout.LabelField(
                 "Tuna Package Installer",
                 EditorStyles.boldLabel);
-
+            
             GUILayout.Space(6);
 
             DrawToolbar();
@@ -92,9 +92,24 @@ namespace Tuna.PackageInstaller.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndScrollView();
+            
+            EditorGUILayout.LabelField(
+                "Download UV: https://docs.astral.sh/uv/getting-started/installation/",
+                EditorStyles.miniLabel);
+            
+            EditorGUILayout.LabelField(
+                "Download Python: https://www.python.org/downloads/",
+                EditorStyles.miniLabel);
 
+            GUILayout.Space(8);
+
+            EditorGUILayout.LabelField(
+                "Version v0.0.1",
+                EditorStyles.miniLabel);
+            
             GUILayout.Space(10);
 
+            
             if (GUILayout.Button("Install Selected", GUILayout.Height(36)))
             {
                 InstallSelected();

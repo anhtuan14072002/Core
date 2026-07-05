@@ -129,7 +129,6 @@ MonoBehaviour:
   loadingMessageText: {fileID: 2824169840146644073}
   loadingPercentageText: {fileID: 6847904812694384897}
   loadingbarObject: {fileID: 4833243005473205656}
-  retryButton: {fileID: 4382827149430458163}
 --- !u!1 &1447676834067953736
 GameObject:
   m_ObjectHideFlags: 0
