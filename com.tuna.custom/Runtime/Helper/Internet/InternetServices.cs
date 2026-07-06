@@ -13,7 +13,7 @@ namespace Core
 
         [SerializeField] private bool _isOpenSetting;
 
-        [SerializeField] private bool _canPlayOffline;
+        [SerializeField] private bool checkNetworkConnection;
 
         [SerializeField] private float _checkInterval = 2f;
 
@@ -31,7 +31,7 @@ namespace Core
                 _tryAgain.onClick.AddListener(OnTryAgainClicked);
             }
 
-            if (_canPlayOffline)
+            if (!checkNetworkConnection)
             {
                 SetPopupActive(false);
             }
@@ -39,7 +39,7 @@ namespace Core
 
         private void OnEnable()
         {
-            if (_canPlayOffline)
+            if (!checkNetworkConnection)
             {
                 SetPopupActive(false);
                 return;
@@ -74,7 +74,7 @@ namespace Core
 
         private void OnTryAgainClicked()
         {
-            if (_canPlayOffline)
+            if (!checkNetworkConnection)
             {
                 SetPopupActive(false);
                 return;
@@ -94,7 +94,7 @@ namespace Core
 
         private IEnumerator CheckInternetAndUpdatePopup()
         {
-            if (_canPlayOffline)
+            if (!checkNetworkConnection)
             {
                 SetPopupActive(false);
                 yield break;

@@ -682,6 +682,6 @@ MonoBehaviour:
   _popupNoInterNet: {fileID: 4437794766480379960}
   _tryAgain: {fileID: 71493553199197826}
   _isOpenSetting: 0
-  _canPlayOffline: 0
+  checkNetworkConnection: 1
   _checkInterval: 1
   _checkUrl: https://google.com/
