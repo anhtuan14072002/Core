@@ -52,6 +52,10 @@ namespace Tuna.PackageInstaller.Editor
             new(
                 "MCP",
                 "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+                PackageSource.GitUrl),  
+            new(
+                "LitMotion",
+                "https://github.com/annulusgames/LitMotion.git?path=src/LitMotion/Assets/LitMotion",
                 PackageSource.GitUrl),
         };
 
