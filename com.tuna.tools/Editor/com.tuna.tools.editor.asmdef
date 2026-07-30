@@ -1,0 +1,16 @@
+{
+    "name": "com.tuna.tools.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cf23226f148f84643b3f274f11250441"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

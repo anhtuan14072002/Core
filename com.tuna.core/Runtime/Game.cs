@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿/*
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace Core
@@ -19,3 +20,4 @@ namespace Core
         }
     }
 }
+*/
