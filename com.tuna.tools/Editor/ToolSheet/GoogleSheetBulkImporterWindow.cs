@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Sheet;
-using Sheet.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace Wizard.Editor
+namespace Sheet.Editor
 {
     public sealed class GoogleSheetBulkImporterWindow : EditorWindow
     {
@@ -18,12 +16,14 @@ namespace Wizard.Editor
 
         private bool isImporting;
 
+        // Mở cửa sổ import nhiều Google Sheet từ menu Tools.
         [MenuItem("Tools/Google Sheet/Bulk Importer")]
         private static void Open()
         {
             GetWindow<GoogleSheetBulkImporterWindow>("Bulk Importer");
         }
 
+        // Vẽ giao diện chọn config và bắt đầu quá trình bulk import.
         private void OnGUI()
         {
             EditorGUILayout.LabelField(
@@ -61,6 +61,7 @@ namespace Wizard.Editor
             }
         }
 
+        // Tạo asset cấu hình bulk import mới và mở cửa sổ chỉnh sửa.
         private void CreateConfig()
         {
             string path = EditorUtility.SaveFilePanelInProject(
@@ -79,6 +80,7 @@ namespace Wizard.Editor
             GoogleSheetBulkImportConfigWindow.Open(config);
         }
 
+        // Import lần lượt các sheet hợp lệ và tổng hợp lỗi để báo sau cùng.
         private async void ImportAsync()
         {
             isImporting = true;
@@ -145,6 +147,7 @@ namespace Wizard.Editor
             }
         }
 
+        // Kiểm tra sheet có bị bỏ qua theo prefix đã cấu hình hay không.
         private bool IsExcluded(GoogleSheetBulkImportItem item)
         {
             return !string.IsNullOrEmpty(ignorePrefix) &&
@@ -152,6 +155,7 @@ namespace Wizard.Editor
                    item.SheetName.StartsWith(ignorePrefix, StringComparison.Ordinal);
         }
 
+        // Tải một sheet, parse CSV và lưu kết quả vào GoogleSheetData asset.
         private static async Task<GoogleSheetData> ImportItemAsync(
             GoogleSheetBulkImportItem item,
             int index)
@@ -206,6 +210,7 @@ namespace Wizard.Editor
             return sheet;
         }
 
+        // Chuyển URL Google Sheet hoặc CSV thành URL tải dữ liệu trực tiếp.
         internal static bool TryBuildDownloadUrl(
             GoogleSheetBulkImportItem item,
             out string downloadUrl,
@@ -285,12 +290,14 @@ namespace Wizard.Editor
             return true;
         }
 
+        // Lấy tham số từ cả query và fragment của URL.
         private static string GetParameter(Uri uri, string name)
         {
             string value = GetParameter(uri.Query, name);
             return value ?? GetParameter(uri.Fragment, name);
         }
 
+        // Tìm và giải mã một tham số trong chuỗi query.
         private static string GetParameter(string parameters, string name)
         {
             if (string.IsNullOrEmpty(parameters))
@@ -313,6 +320,7 @@ namespace Wizard.Editor
             return null;
         }
 
+        // Tạo asset path và full path an toàn cho sheet sau khi import.
         internal static bool TryGetOutputPaths(
             GoogleSheetBulkImportItem item,
             int index,
@@ -360,11 +368,13 @@ namespace Wizard.Editor
             return true;
         }
 
+        // Trả về giá trị chính nếu có, nếu không dùng giá trị dự phòng.
         private static string FirstNotEmpty(string value, string fallback)
         {
             return !string.IsNullOrWhiteSpace(value) ? value.Trim() : fallback;
         }
 
+        // Loại bỏ các ký tự không hợp lệ khỏi tên file output.
         private static string SanitizeFileName(string fileName)
         {
             char[] invalidChars = Path.GetInvalidFileNameChars();
@@ -374,6 +384,7 @@ namespace Wizard.Editor
             return fileName;
         }
 
+        // Parse nội dung CSV, hỗ trợ dấu phẩy, xuống dòng và dấu nháy trong ô.
         internal static List<List<string>> ParseCsv(string csv)
         {
             var rows = new List<List<string>>();
@@ -439,6 +450,7 @@ namespace Wizard.Editor
             return rows;
         }
 
+        // Chạy kiểm tra nhanh cho URL, output path, CSV parser và resize helper.
         [MenuItem("Tools/Google Sheet/Run Bulk Importer Self Check")]
         private static void RunSelfCheck()
         {
@@ -515,6 +527,7 @@ namespace Wizard.Editor
 
         private Vector2 scroll;
 
+        // Mở cửa sổ chỉnh sửa cho asset bulk import config được chọn.
         public static void Open(GoogleSheetBulkImportConfig target)
         {
             var window = GetWindow<GoogleSheetBulkImportConfigWindow>(target.name);
@@ -524,6 +537,7 @@ namespace Wizard.Editor
             window.Show();
         }
 
+        // Vẽ giao diện dạng bảng để chỉnh sửa các dòng cấu hình import.
         private void OnGUI()
         {
             if (config == null)
@@ -539,6 +553,7 @@ namespace Wizard.Editor
             GoogleSheetGridGUI.DrawFooter();
         }
 
+        // Vẽ thanh công cụ tìm kiếm, thêm và xóa dòng config.
         private void DrawToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.Height(28f));
@@ -592,6 +607,7 @@ namespace Wizard.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // Thêm một dòng import mới vào cuối config.
         private void AddRow()
         {
             Undo.RecordObject(config, "Add bulk import row");
@@ -600,6 +616,7 @@ namespace Wizard.Editor
             EditorUtility.SetDirty(config);
         }
 
+        // Xóa dòng config đang được chọn.
         private void RemoveSelectedRow()
         {
             if (selectedRow < 0 || selectedRow >= config.Items.Count)
@@ -613,6 +630,7 @@ namespace Wizard.Editor
             EditorUtility.SetDirty(config);
         }
 
+        // Vẽ thanh chỉnh sửa giá trị của ô đang chọn.
         private void DrawFormulaBar()
         {
             EditorGUILayout.BeginHorizontal();
@@ -636,6 +654,7 @@ namespace Wizard.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // Vẽ toàn bộ bảng config, header, cell và vùng resize.
         private void DrawGrid()
         {
             int rowCount = Mathf.Max(MinimumRowCount, config.Items.Count + 1);
@@ -731,6 +750,7 @@ namespace Wizard.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        // Vẽ và xử lý nhập liệu cho một ô config.
         private void DrawDataCell(Rect rect, int row, int column)
         {
             string text = GetCellText(row, column);
@@ -766,11 +786,13 @@ namespace Wizard.Editor
                 SetCellText(row, column, text);
         }
 
+        // Vẽ một ô header bằng style chung của grid.
         private static void DrawHeaderCell(Rect rect, string text)
         {
             GoogleSheetGridGUI.DrawHeaderCell(rect, text);
         }
 
+        // Tính vị trí và kích thước của một ô trong grid.
         private Rect GetCellRect(Rect canvas, int row, int column)
         {
             float y = row < 0
@@ -789,6 +811,7 @@ namespace Wizard.Editor
                 height);
         }
 
+        // Đọc giá trị hiển thị của một ô config.
         private string GetCellText(int row, int column)
         {
             if (row < 0 || row >= config.Items.Count || column < 0)
@@ -813,6 +836,7 @@ namespace Wizard.Editor
             };
         }
 
+        // Ghi giá trị ô vào item config và đánh dấu asset đã thay đổi.
         private void SetCellText(int row, int column, string value)
         {
             if (row < 0 || column < 0 || column >= EditableColumnCount)
@@ -846,6 +870,7 @@ namespace Wizard.Editor
             EditorUtility.SetDirty(config);
         }
 
+        // Xóa các dòng trống ở cuối config trước khi lưu.
         private void TrimEmptyTrailingRows()
         {
             while (config.Items.Count > 1 &&
@@ -855,6 +880,7 @@ namespace Wizard.Editor
             }
         }
 
+        // Kiểm tra một dòng import có hoàn toàn trống hay không.
         private static bool IsEmpty(GoogleSheetBulkImportItem item)
         {
             return item == null ||
@@ -865,6 +891,7 @@ namespace Wizard.Editor
                      item.SaveTo == "Assets/_Project/Resources/Config/"));
         }
 
+        // Chuyển nội dung ô Type thành kiểu import tương ứng.
         private static SheetImportType ParseImportType(string value)
         {
             if (string.Equals(value, "google", StringComparison.OrdinalIgnoreCase))
@@ -875,12 +902,14 @@ namespace Wizard.Editor
                 : SheetImportType.Auto;
         }
 
+        // Tạo tên ô dạng spreadsheet từ row và column.
         private static string GetCellName(int row, int column)
         {
             int safeColumn = Mathf.Clamp(column, 0, ColumnCount - 1);
             return $"{(char)('A' + safeColumn)}{Mathf.Max(0, row) + 1}";
         }
 
+        // Dọn dòng trống và lưu config khi đóng cửa sổ.
         private void OnDestroy()
         {
             if (config != null)
@@ -913,9 +942,13 @@ namespace Wizard.Editor
         private static GUIStyle tabStyle;
         private static GUIStyle headerStyle;
 
+        // Cung cấp style dùng chung cho các ô dữ liệu.
         public static GUIStyle CellStyle => cellStyle ??= CreateCellStyle();
+
+        // Cung cấp style dùng chung cho ô nhập liệu trên formula bar.
         public static GUIStyle FormulaStyle => formulaStyle ??= CreateFormulaStyle();
 
+        // Bổ sung độ rộng mặc định để danh sách đủ số cột cần vẽ.
         public static void EnsureColumnWidths(
             List<float> widths,
             int count,
@@ -925,6 +958,7 @@ namespace Wizard.Editor
                 widths.Add(defaultWidth);
         }
 
+        // Bổ sung chiều cao mặc định để danh sách đủ số dòng cần vẽ.
         public static void EnsureRowHeights(
             List<float> heights,
             int count,
@@ -934,6 +968,7 @@ namespace Wizard.Editor
                 heights.Add(defaultHeight);
         }
 
+        // Tính tổng độ rộng của số cột được yêu cầu.
         public static float GetTotalWidth(List<float> widths, int count)
         {
             float width = 0f;
@@ -943,6 +978,7 @@ namespace Wizard.Editor
             return width;
         }
 
+        // Tính khoảng cách từ đầu grid tới một cột.
         public static float GetColumnOffset(List<float> widths, int column)
         {
             float offset = 0f;
@@ -952,6 +988,7 @@ namespace Wizard.Editor
             return offset;
         }
 
+        // Tính tổng chiều cao của số dòng được yêu cầu.
         public static float GetTotalHeight(List<float> heights, int count)
         {
             float height = 0f;
@@ -961,6 +998,7 @@ namespace Wizard.Editor
             return height;
         }
 
+        // Tính khoảng cách từ đầu grid tới một dòng.
         public static float GetRowOffset(List<float> heights, int row)
         {
             float offset = 0f;
@@ -970,6 +1008,7 @@ namespace Wizard.Editor
             return offset;
         }
 
+        // Xử lý kéo chuột để thay đổi độ rộng một cột.
         public static void HandleColumnResize(
             Rect columnRect,
             int column,
@@ -1020,6 +1059,7 @@ namespace Wizard.Editor
             }
         }
 
+        // Áp dụng delta resize và giới hạn độ rộng cột tối thiểu.
         internal static float ResizeColumn(float width, float delta)
         {
             return Mathf.Max(
@@ -1027,6 +1067,7 @@ namespace Wizard.Editor
                 width + delta * ResizeSensitivity);
         }
 
+        // Xử lý kéo chuột để thay đổi chiều cao một dòng.
         public static void HandleRowResize(
             Rect rowRect,
             int row,
@@ -1077,6 +1118,7 @@ namespace Wizard.Editor
             }
         }
 
+        // Áp dụng delta resize và giới hạn chiều cao dòng tối thiểu.
         internal static float ResizeRow(float height, float delta)
         {
             return Mathf.Max(
@@ -1084,6 +1126,7 @@ namespace Wizard.Editor
                 height + delta * ResizeSensitivity);
         }
 
+        // Vẽ thanh tab tiêu đề phía trên grid.
         public static void DrawTabBar(string title)
         {
             Rect bar = GUILayoutUtility.GetRect(0f, 26f, GUILayout.ExpandWidth(true));
@@ -1097,6 +1140,7 @@ namespace Wizard.Editor
             GUI.Label(tab, title, tabStyle ??= CreateTabStyle());
         }
 
+        // Vẽ nút toolbar và trả về true khi người dùng nhấn.
         public static bool ToolbarButton(string text, string tooltip)
         {
             return GUILayout.Button(
@@ -1106,6 +1150,7 @@ namespace Wizard.Editor
                 GUILayout.Height(25f));
         }
 
+        // Vẽ nền, trạng thái chọn, tìm kiếm và đường kẻ cho một ô.
         public static void DrawCell(
             Rect rect,
             bool selected,
@@ -1140,6 +1185,7 @@ namespace Wizard.Editor
                 SelectionColor);
         }
 
+        // Vẽ header của hàng hoặc cột với trạng thái được chọn.
         public static void DrawHeaderCell(
             Rect rect,
             string text,
@@ -1150,6 +1196,7 @@ namespace Wizard.Editor
             GUI.Label(rect, text, headerStyle ??= CreateHeaderStyle());
         }
 
+        // Vẽ footer mô phỏng tab sheet ở cuối cửa sổ.
         public static void DrawFooter()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -1158,6 +1205,7 @@ namespace Wizard.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // Vẽ đường viền dưới và phải của một ô grid.
         private static void DrawGridLines(Rect rect)
         {
             EditorGUI.DrawRect(
@@ -1168,6 +1216,7 @@ namespace Wizard.Editor
                 GridColor);
         }
 
+        // Tạo style nhập liệu cho các ô dữ liệu.
         private static GUIStyle CreateCellStyle()
         {
             return new GUIStyle(EditorStyles.label)
@@ -1178,6 +1227,7 @@ namespace Wizard.Editor
             };
         }
 
+        // Tạo style nhập liệu cho formula bar.
         private static GUIStyle CreateFormulaStyle()
         {
             return new GUIStyle(EditorStyles.textField)
@@ -1189,6 +1239,7 @@ namespace Wizard.Editor
             };
         }
 
+        // Tạo style hiển thị tên tab sheet.
         private static GUIStyle CreateTabStyle()
         {
             return new GUIStyle(EditorStyles.label)
@@ -1198,6 +1249,7 @@ namespace Wizard.Editor
             };
         }
 
+        // Tạo style chữ cho header hàng và cột.
         private static GUIStyle CreateHeaderStyle()
         {
             return new GUIStyle(EditorStyles.centeredGreyMiniLabel)

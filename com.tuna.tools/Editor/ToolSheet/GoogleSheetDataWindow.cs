@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using Wizard.Editor;
 
 namespace Sheet.Editor
 {
@@ -24,6 +23,7 @@ namespace Sheet.Editor
 
         private Vector2 scroll;
 
+        // Mở cửa sổ chỉnh sửa cho GoogleSheetData asset được chọn.
         public static void Open(GoogleSheetData target)
         {
             var window = GetWindow<GoogleSheetDataWindow>(target.name);
@@ -33,6 +33,7 @@ namespace Sheet.Editor
             window.Show();
         }
 
+        // Mở sheet editor khi người dùng double-click GoogleSheetData asset.
         [OnOpenAsset]
         private static bool OpenAsset(int instanceId, int line)
         {
@@ -43,6 +44,7 @@ namespace Sheet.Editor
             return true;
         }
 
+        // Vẽ thanh công cụ, formula bar, grid và footer của sheet editor.
         private void OnGUI()
         {
             if (sheet == null)
@@ -58,6 +60,7 @@ namespace Sheet.Editor
             GoogleSheetGridGUI.DrawFooter();
         }
 
+        // Vẽ thanh tìm kiếm và các nút thêm, xóa dòng.
         private void DrawToolbar()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar, GUILayout.Height(28f));
@@ -104,6 +107,7 @@ namespace Sheet.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // Thêm một dòng dữ liệu mới vào cuối sheet.
         private void AddRow()
         {
             Undo.RecordObject(sheet, "Add sheet row");
@@ -112,6 +116,7 @@ namespace Sheet.Editor
             EditorUtility.SetDirty(sheet);
         }
 
+        // Xóa dòng dữ liệu đang được chọn.
         private void RemoveSelectedRow()
         {
             if (selectedRow < 0 || selectedRow >= sheet.Rows.Count)
@@ -125,6 +130,7 @@ namespace Sheet.Editor
             EditorUtility.SetDirty(sheet);
         }
 
+        // Vẽ thanh chỉnh sửa nội dung của ô đang chọn.
         private void DrawFormulaBar()
         {
             EditorGUILayout.BeginHorizontal();
@@ -145,6 +151,7 @@ namespace Sheet.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // Vẽ toàn bộ sheet grid, header, cell và vùng resize.
         private void DrawGrid()
         {
             int rowCount = Mathf.Max(MinimumRowCount, sheet.Rows.Count + 1);
@@ -227,6 +234,7 @@ namespace Sheet.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        // Vẽ và xử lý nhập liệu cho một ô dữ liệu.
         private void DrawDataCell(Rect rect, int row, int column)
         {
             string value = GetCellText(row, column);
@@ -260,11 +268,13 @@ namespace Sheet.Editor
                 SetCellText(row, column, value);
         }
 
+        // Vẽ một ô header bằng style chung của grid.
         private static void DrawHeaderCell(Rect rect, string text)
         {
             GoogleSheetGridGUI.DrawHeaderCell(rect, text);
         }
 
+        // Tính vị trí và kích thước của một ô trong sheet grid.
         private Rect GetCellRect(Rect canvas, int row, int column)
         {
             float y = row < 0
@@ -283,6 +293,7 @@ namespace Sheet.Editor
                 height);
         }
 
+        // Tìm số cột dữ liệu lớn nhất hiện có trong sheet.
         private int GetDataColumnCount()
         {
             int count = 0;
@@ -295,6 +306,7 @@ namespace Sheet.Editor
             return count;
         }
 
+        // Đọc nội dung ô, trả về chuỗi rỗng nếu ô chưa tồn tại.
         private string GetCellText(int row, int column)
         {
             if (row < 0 ||
@@ -309,6 +321,7 @@ namespace Sheet.Editor
             return sheet.Rows[row].Cells[column] ?? string.Empty;
         }
 
+        // Tạo ô khi cần, ghi dữ liệu và đánh dấu sheet đã thay đổi.
         private void SetCellText(int row, int column, string value)
         {
             if (row < 0 || column < 0)
@@ -329,6 +342,7 @@ namespace Sheet.Editor
             EditorUtility.SetDirty(sheet);
         }
 
+        // Chuyển chỉ số cột thành tên spreadsheet như A, B hoặc AA.
         private static string GetColumnName(int index)
         {
             string name = string.Empty;
@@ -344,6 +358,7 @@ namespace Sheet.Editor
             return name;
         }
 
+        // Lưu thay đổi của sheet khi đóng cửa sổ.
         private void OnDestroy()
         {
             if (sheet != null)
@@ -354,6 +369,7 @@ namespace Sheet.Editor
     [CustomEditor(typeof(GoogleSheetData))]
     public sealed class GoogleSheetDataInspector : UnityEditor.Editor
     {
+        // Hiển thị thông tin sheet và nút mở sheet editor trong Inspector.
         public override void OnInspectorGUI()
         {
             var sheet = (GoogleSheetData)target;

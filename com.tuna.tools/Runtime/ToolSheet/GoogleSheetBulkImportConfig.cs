@@ -22,7 +22,7 @@ namespace Sheet
 
     [CreateAssetMenu(
         fileName = "BulkImportConfig",
-        menuName = "Wizard/Google Sheet Bulk Import Config")]
+        menuName = "TunaCore/Google Sheet Bulk Import Config")]
     public sealed class GoogleSheetBulkImportConfig : ScriptableObject
     {
         public List<GoogleSheetBulkImportItem> Items = new();

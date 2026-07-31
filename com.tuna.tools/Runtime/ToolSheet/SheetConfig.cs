@@ -11,6 +11,7 @@ namespace Sheet
     {
         public int Column { get; }
 
+        // Khai báo cột trong sheet được ánh xạ vào field config.
         public DataSheetAttribute(int column)
         {
             if (column < 0)
@@ -20,95 +21,13 @@ namespace Sheet
         }
     }
 
-    public interface ISheetConfigPostLoad
-    {
-        void OnLoaded(SheetRowReader row);
-    }
-
-    public readonly struct SheetRowReader
-    {
-        private readonly string configName;
-        private readonly int rowNumber;
-        private readonly GoogleSheetDataRow row;
-        private readonly Dictionary<string, int> columns;
-
-        internal SheetRowReader(
-            string configName,
-            int rowNumber,
-            GoogleSheetDataRow row,
-            Dictionary<string, int> columns)
-        {
-            this.configName = configName;
-            this.rowNumber = rowNumber;
-            this.row = row;
-            this.columns = columns;
-        }
-
-        public T Get<T>(string columnName)
-        {
-            return SheetConfig.ConvertValue<T>(GetCell(columnName));
-        }
-
-        public Dictionary<TKey, TValue> GetMap<TKey, TValue>(
-            string keyColumn,
-            string valueColumn,
-            char separator = '|')
-        {
-            string[] keys = GetCell(keyColumn).Split(separator);
-            string[] values = GetCell(valueColumn).Split(separator);
-
-            if (keys.Length != values.Length)
-            {
-                throw new InvalidOperationException(
-                    $"Columns '{keyColumn}' and '{valueColumn}' " +
-                    $"have different item counts at row {rowNumber} " +
-                    $"in config '{configName}'.");
-            }
-
-            var result = new Dictionary<TKey, TValue>(keys.Length);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                TKey key = SheetConfig.ConvertValue<TKey>(keys[i].Trim());
-                TValue value = SheetConfig.ConvertValue<TValue>(
-                    values[i].Trim());
-
-                if (!result.TryAdd(key, value))
-                {
-                    throw new InvalidOperationException(
-                        $"Duplicate key '{key}' at row {rowNumber} " +
-                        $"in config '{configName}'.");
-                }
-            }
-
-            return result;
-        }
-
-        private string GetCell(string columnName)
-        {
-            if (!columns.TryGetValue(columnName, out int columnIndex))
-            {
-                throw new KeyNotFoundException(
-                    $"Cannot find column '{columnName}' " +
-                    $"in config '{configName}'.");
-            }
-
-            if (columnIndex >= row.Cells.Count)
-            {
-                throw new InvalidOperationException(
-                    $"Row {rowNumber} in config '{configName}' " +
-                    $"does not contain column '{columnName}'.");
-            }
-
-            return row.Cells[columnIndex];
-        }
-    }
-
     public sealed class SheetTable<T>
         where T : class, new()
     {
         private readonly List<T> rows;
         private readonly Dictionary<string, T> rowsById;
 
+        // Lưu danh sách config và bảng tra cứu nhanh theo Id.
         internal SheetTable(
             List<T> rows,
             Dictionary<string, T> rowsById)
@@ -121,6 +40,7 @@ namespace Sheet
         public IReadOnlyList<T> Rows => rows;
         public T this[int index] => rows[index];
 
+        // Lấy config theo thứ tự dòng, bắt đầu từ 1.
         public T GetByOrder(int order)
         {
             if (order < 1 || order > rows.Count)
@@ -133,6 +53,7 @@ namespace Sheet
             return rows[order - 1];
         }
 
+        // Lấy config theo Id dạng chuỗi.
         public T GetById(string id)
         {
             if (!string.IsNullOrWhiteSpace(id) &&
@@ -145,11 +66,13 @@ namespace Sheet
                 $"Cannot find Id '{id}' in {typeof(T).Name}.");
         }
 
+        // Lấy config theo Id dạng số.
         public T GetById(int id)
         {
             return GetById(id.ToString(CultureInfo.InvariantCulture));
         }
 
+        // Thử lấy config theo Id chuỗi mà không phát sinh exception.
         public bool TryGetById(string id, out T row)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -161,6 +84,7 @@ namespace Sheet
             return rowsById.TryGetValue(id, out row);
         }
 
+        // Thử lấy config theo Id số mà không phát sinh exception.
         public bool TryGetById(int id, out T row)
         {
             return TryGetById(
@@ -169,10 +93,11 @@ namespace Sheet
         }
     }
 
-    public static class SheetConfig
+    public static partial class SheetConfig
     {
         private const string ResourcesFolder = "Config/";
 
+        // Tải config từ Resources, ánh xạ dữ liệu và cache kết quả để tái sử dụng.
         public static SheetTable<T> LoadConfig<T>(string configName)
             where T : class, new()
         {
@@ -195,7 +120,6 @@ namespace Sheet
                     $"'Resources/{ResourcesFolder}{configName}'.");
             }
 
-            Dictionary<string, int> columns = ReadColumns(data);
             RowBinding binding = BindingCache<T>.Value;
             var rows = new List<T>(Mathf.Max(0, data.Rows.Count - 1));
             var rowsById = new Dictionary<string, T>(
@@ -227,14 +151,6 @@ namespace Sheet
                             field.Field.FieldType));
                 }
 
-                var reader = new SheetRowReader(
-                    configName,
-                    rowIndex,
-                    sourceRow,
-                    columns);
-                if (row is ISheetConfigPostLoad postLoad)
-                    postLoad.OnLoaded(reader);
-
                 string sheetId = Convert.ToString(
                     binding.IdField.GetValue(row),
                     CultureInfo.InvariantCulture);
@@ -260,11 +176,13 @@ namespace Sheet
             return table;
         }
 
+        // Chuyển chuỗi trong ô sheet sang kiểu dữ liệu được yêu cầu.
         internal static T ConvertValue<T>(string value)
         {
             return (T)ConvertValue(value, typeof(T));
         }
 
+        // Xử lý chuyển đổi giá trị đơn, enum, bool, nullable và mảng phân cách bằng '|'.
         private static object ConvertValue(string value, Type requestedType)
         {
             Type targetType =
@@ -272,6 +190,18 @@ namespace Sheet
 
             if (targetType == typeof(string))
                 return value ?? string.Empty;
+
+            if (targetType.IsArray)
+            {
+                Type elementType = targetType.GetElementType();
+                string[] values = value.Split('|');
+                Array result = Array.CreateInstance(elementType, values.Length);
+
+                for (int i = 0; i < values.Length; i++)
+                    result.SetValue(ConvertValue(values[i].Trim(), elementType), i);
+
+                return result;
+            }
 
             if (targetType.IsEnum)
                 return Enum.Parse(targetType, value, true);
@@ -303,36 +233,7 @@ namespace Sheet
             }
         }
 
-        private static Dictionary<string, int> ReadColumns(
-            GoogleSheetData data)
-        {
-            if (data.Rows.Count == 0 || data.Rows[0] == null)
-            {
-                throw new InvalidOperationException(
-                    $"Config '{data.name}' does not contain a header row.");
-            }
-
-            var columns = new Dictionary<string, int>(
-                StringComparer.OrdinalIgnoreCase);
-            List<string> headers = data.Rows[0].Cells;
-
-            for (int column = 0; column < headers.Count; column++)
-            {
-                string header = headers[column];
-                if (string.IsNullOrWhiteSpace(header))
-                    continue;
-
-                if (!columns.TryAdd(header, column))
-                {
-                    throw new InvalidOperationException(
-                        $"Config '{data.name}' contains duplicate " +
-                        $"column '{header}'.");
-                }
-            }
-
-            return columns;
-        }
-
+        // Đọc các field có DataSheetAttribute và tạo thông tin ánh xạ được cache.
         private static RowBinding ReadBinding(Type rowType)
         {
             FieldInfo[] fields = rowType.GetFields(
@@ -377,7 +278,8 @@ namespace Sheet
                     "with [DataSheet(0)].");
             }
 
-            bindings.Sort((left, right) => left.Column.CompareTo(right.Column));
+            bindings.Sort(
+                (left, right) => left.Column.CompareTo(right.Column));
             return new RowBinding(bindings.ToArray(), idField);
         }
 
@@ -400,6 +302,7 @@ namespace Sheet
             public readonly FieldInfo Field;
             public readonly int Column;
 
+            // Lưu field đích và chỉ số cột nguồn tương ứng.
             public FieldBinding(FieldInfo field, int column)
             {
                 Field = field;
@@ -412,6 +315,7 @@ namespace Sheet
             public readonly FieldBinding[] Fields;
             public readonly FieldInfo IdField;
 
+            // Lưu toàn bộ binding của một loại config và field Id của nó.
             public RowBinding(
                 FieldBinding[] fields,
                 FieldInfo idField)
