@@ -1,13 +1,13 @@
 {
   "displayName": "Tuna Tools",
   "description": "",
-  "dependencies": {
-  },
+  "dependencies": {},
   "name": "com.tuna.tools",
   "author": {
     "name": "TunaPC"
   },
   "unity": "2020.3",
   "unityRelease": "0f1",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "_fingerprint": "a70c23b67c53fa6767c190fe564fd6ec9f245207"
 }

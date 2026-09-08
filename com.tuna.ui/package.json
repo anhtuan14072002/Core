@@ -1,13 +1,13 @@
 {
   "displayName": "Tuna UI",
   "description": "",
-  "dependencies": {
-  },
+  "dependencies": {},
   "name": "com.tuna.ui",
   "author": {
     "name": "TunaPC"
   },
   "unity": "2020.3",
   "unityRelease": "0f1",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "_fingerprint": "ad639b3d46b847efe5227bf44061f2c8b5bd2889"
 }

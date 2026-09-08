@@ -98,18 +98,22 @@ namespace Sheet
         private const string ResourcesFolder = "Config/";
 
         // Tải config từ Resources, ánh xạ dữ liệu và cache kết quả để tái sử dụng.
-        public static SheetTable<T> LoadConfig<T>(string configName)
+        public static SheetTable<T> LoadConfig<T>(string configName,
+            bool allowDuplicateIds = false, bool forceReload = false)
             where T : class, new()
         {
             if (string.IsNullOrWhiteSpace(configName))
                 throw new ArgumentException("Config name is required.", nameof(configName));
 
-            if (SheetCache<T>.Tables.TryGetValue(
+            if (!forceReload && SheetCache<T>.Tables.TryGetValue(
                     configName,
                     out SheetTable<T> table))
             {
                 return table;
             }
+
+            if (forceReload)
+                SheetCache<T>.Tables.Remove(configName);
 
             GoogleSheetData data = Resources.Load<GoogleSheetData>(
                 ResourcesFolder + configName);
@@ -161,7 +165,7 @@ namespace Sheet
                         "does not contain an Id in column 0.");
                 }
 
-                if (!rowsById.TryAdd(sheetId, row))
+                if (!rowsById.TryAdd(sheetId, row) && !allowDuplicateIds)
                 {
                     throw new InvalidOperationException(
                         $"Config '{configName}' contains duplicate " +
@@ -217,6 +221,13 @@ namespace Sheet
 
             try
             {
+                if (targetType == typeof(float) ||
+                    targetType == typeof(double) ||
+                    targetType == typeof(decimal))
+                {
+                    value = value.Replace(',', '.');
+                }
+
                 return Convert.ChangeType(
                     value,
                     targetType,

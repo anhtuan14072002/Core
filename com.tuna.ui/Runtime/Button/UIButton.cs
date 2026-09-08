@@ -36,7 +36,7 @@ namespace Core
         protected override void OnEnable()
         {
             base.OnEnable();
-            UpdateButtonState();
+            UpdateButtonState(true);
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -56,22 +56,22 @@ namespace Core
             if (!_button.interactable) return;
         }
 
-        private void UpdateButtonState()
+        private void UpdateButtonState(bool instant)
         {
             if (_button.interactable)
             {
-                _image.DoSetImageColor(false, _colorNormal, _duration, Ease.Linear);
-                _rectTransform.DoScaleRect(false, _scaleNormal, _duration, Ease.Linear);
+                _image.DoSetImageColor(instant, _colorNormal, _duration, Ease.Linear);
+                _rectTransform.DoScaleRect(instant, _scaleNormal, _duration, Ease.Linear);
             }
             else
             {
-                _image.DoSetImageColor(false, _colorDisable, _duration, Ease.Linear);
-                _rectTransform.DoScaleRect(false, _scaleNormal, _duration, Ease.Linear);
+                _image.DoSetImageColor(instant, _colorDisable, _duration, Ease.Linear);
+                _rectTransform.DoScaleRect(instant, _scaleNormal, _duration, Ease.Linear);
             }
         }
         public void RefreshButtonState()
         {
-            UpdateButtonState();
+            UpdateButtonState(false);
         }
     }
 }

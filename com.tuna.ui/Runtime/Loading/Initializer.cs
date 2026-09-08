@@ -21,6 +21,8 @@ namespace Core
             GameObject = gameObject;
             Transform = transform;
             
+            // Keep the loading EventSystem scene-owned; gameplay supplies its own.
+            eventSystem.transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
         }
 
