@@ -20,6 +20,7 @@ namespace Tuna.PackageInstaller.Editor
             new("Tuna / Tools",        "com.tuna.tools"),
             // new("Tuna / Zenject",      "com.tuna.zenject"),
             new("Tuna / Custom",       "com.tuna.custom"),
+            new("Tuna / Framework",       "com.tuna.framework"),
         };
 
         private readonly List<PackageInfo> _thirdPartyOnlyPackages = new()

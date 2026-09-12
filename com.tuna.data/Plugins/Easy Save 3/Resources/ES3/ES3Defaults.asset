@@ -38,16 +38,7 @@ MonoBehaviour:
     - Assembly-CSharp
     - EasySave3
     - Lofelt.NiceVibrations
-    - MCPForUnity.Runtime
     - ParticleImage
-    - PrimeTween.Debug
-    - PrimeTween.Demo
-    - PrimeTween.Runtime
-    - UniTask
-    - UniTask.Addressables
-    - UniTask.DOTween
-    - UniTask.Linq
-    - UniTask.TextMeshPro
     - YadeRuntime
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0

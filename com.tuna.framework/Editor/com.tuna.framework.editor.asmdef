@@ -1,0 +1,17 @@
+{
+    "name": "com.tuna.framework.editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:06ff2deeae01dbd48b974fecf393e462",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

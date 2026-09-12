@@ -1,0 +1,15 @@
+{
+  "name": "com.tuna.framework.tests",
+  "references": [
+    "com.tuna.framework.runtime",
+    "com.tuna.framework.editor",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false
+}
