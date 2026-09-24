@@ -16,7 +16,7 @@ namespace RogueliteToolkit.SkillTree.Editor
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling)
                 return;
-            foreach (string guid in AssetDatabase.FindAssets("t:SkillTreeDefinition", new[] { "Assets" }))
+            foreach (string guid in AssetDatabase.FindAssets("t:SkillTreeDefinition", new[] { "Assets", "Packages/com.tuna.framework" }))
             {
                 SkillTreeDefinition tree =
                     AssetDatabase.LoadAssetAtPath<SkillTreeDefinition>(AssetDatabase.GUIDToAssetPath(guid));

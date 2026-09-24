@@ -40,6 +40,11 @@ namespace RogueliteToolkit.SkillTree.Editor
         public void CreateGUI()
         {
             rootVisualElement.Clear();
+            StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
+                "Packages/com.tuna.framework/Runtime/Framework/RogueliteToolkit/Editor/" +
+                "SkillTree/SkillTreeAuthoringWindow.uss");
+            if (styleSheet != null)
+                rootVisualElement.styleSheets.Add(styleSheet);
             rootVisualElement.style.flexDirection = FlexDirection.Column;
             BuildToolbar();
             _graphView = new SkillTreeGraphView(this);
@@ -326,11 +331,6 @@ namespace RogueliteToolkit.SkillTree.Editor
                 name = "Skill Tree Graph";
                 AddToClassList("skill-tree-graph");
                 style.flexGrow = 1f;
-                StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
-                    "Assets/_Project/Script/Framework/RogueliteToolkit/Editor/" +
-                    "SkillTree/SkillTreeAuthoringWindow.uss");
-                if (styleSheet != null)
-                    styleSheets.Add(styleSheet);
                 SetupZoom(ContentZoomer.DefaultMinScale, MaxZoom);
                 RegisterCallback<KeyDownEvent>(OnAlignKey);
                 // SelectionDragger can inspect mouse input before a child field's

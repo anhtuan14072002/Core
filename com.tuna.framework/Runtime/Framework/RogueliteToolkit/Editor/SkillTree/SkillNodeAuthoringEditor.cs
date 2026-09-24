@@ -516,7 +516,7 @@ namespace RogueliteToolkit.SkillTree.Editor
             }
 
             Add("None", null);
-            foreach (StatDefinition stat in AssetDatabase.FindAssets("t:StatDefinition", new[] { "Assets" })
+            foreach (StatDefinition stat in AssetDatabase.FindAssets("t:StatDefinition", new[] { "Assets", "Packages/com.tuna.framework" })
                          .Select(guid =>
                              AssetDatabase.LoadAssetAtPath<StatDefinition>(AssetDatabase.GUIDToAssetPath(guid)))
                          .Where(stat => stat != null).OrderBy(stat => stat.name))
