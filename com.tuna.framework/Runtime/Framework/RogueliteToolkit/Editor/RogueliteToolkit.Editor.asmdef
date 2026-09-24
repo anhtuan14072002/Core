@@ -1,0 +1,20 @@
+{
+    "name": "RogueliteToolkit.Editor",
+    "rootNamespace": "RogueliteToolkit",
+    "references": [
+        "RogueliteToolkit.Runtime",
+        "RogueliteToolkit.SkillTree.Authoring",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

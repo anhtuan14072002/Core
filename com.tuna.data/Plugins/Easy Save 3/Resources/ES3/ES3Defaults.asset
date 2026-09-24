@@ -39,6 +39,15 @@ MonoBehaviour:
     - EasySave3
     - Lofelt.NiceVibrations
     - ParticleImage
+    - PrimeTween.Runtime
+    - RogueliteToolkit.Runtime
+    - RogueliteToolkit.SkillTree.Authoring
+    - RogueliteToolkit.SkillTree.UI
+    - UniTask
+    - UniTask.Addressables
+    - UniTask.DOTween
+    - UniTask.Linq
+    - UniTask.TextMeshPro
     - YadeRuntime
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0
