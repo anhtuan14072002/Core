@@ -1,12 +1,12 @@
 .skill-tree-graph {
-    background-color: rgb(24, 26, 31);
+    background-color: rgb(39, 37, 40);
 }
 
-GridBackground {
-    --grid-background-color: rgb(24, 26, 31);
-    --line-color: rgba(110, 120, 135, 0.18);
-    --thick-line-color: rgba(135, 150, 170, 0.28);
-    --spacing: 20;
+.skill-tree-graph GridBackground {
+    --grid-background-color: rgb(39, 37, 40);
+    --line-color: rgba(255, 255, 255, 0.025);
+    --thick-line-color: rgba(255, 255, 255, 0.055);
+    --spacing: 10;
     --thick-lines: 5;
 }
 

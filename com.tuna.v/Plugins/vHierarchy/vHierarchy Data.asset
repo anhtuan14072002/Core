@@ -16,6 +16,4 @@ MonoBehaviour:
     keys: []
     values: []
   bookmarks: []
-  bookmarkedScenePaths:
-  - Assets/_Project/Scenes/LoadingGame.unity
-  - Assets/_Project/Scenes/Gameplay.unity
+  bookmarkedScenePaths: []
