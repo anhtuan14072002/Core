@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,7 +89,6 @@ namespace Sheet.Editor
 
             int importedCount = 0;
             var errors = new StringBuilder();
-            GoogleSheetData lastImportedSheet = null;
 
             try
             {
@@ -110,7 +110,7 @@ namespace Sheet.Editor
 
                     try
                     {
-                        lastImportedSheet = await ImportItemAsync(item, i);
+                        await ImportItemAsync(item, i);
                         importedCount++;
                     }
                     catch (Exception exception)
@@ -127,11 +127,6 @@ namespace Sheet.Editor
             }
 
             AssetDatabase.SaveAssets();
-            if (lastImportedSheet != null)
-            {
-                Selection.activeObject = lastImportedSheet;
-                GoogleSheetDataWindow.Open(lastImportedSheet);
-            }
 
             if (errors.Length == 0)
             {
@@ -385,7 +380,7 @@ namespace Sheet.Editor
         }
 
         // Parse nội dung CSV, hỗ trợ dấu phẩy, xuống dòng và dấu nháy trong ô.
-        internal static List<List<string>> ParseCsv(string csv)
+        internal static List<List<string>> ParseCsv(string csv, char delimiter = ',')
         {
             var rows = new List<List<string>>();
             var row = new List<string>();
@@ -396,7 +391,7 @@ namespace Sheet.Editor
             {
                 char character = csv[i];
 
-                if (character == '"')
+                if (character == '"' && (insideQuotes || cell.Length == 0))
                 {
                     if (insideQuotes && i + 1 < csv.Length && csv[i + 1] == '"')
                     {
@@ -411,7 +406,7 @@ namespace Sheet.Editor
                     continue;
                 }
 
-                if (!insideQuotes && character == ',')
+                if (!insideQuotes && character == delimiter)
                 {
                     row.Add(cell.ToString());
                     cell.Clear();
@@ -441,7 +436,7 @@ namespace Sheet.Editor
             if (insideQuotes)
                 throw new FormatException("CSV contains an unclosed quoted cell.");
 
-            if (cell.Length > 0 || row.Count > 0)
+            if (cell.Length > 0 || row.Count > 0 || (csv.Length > 0 && csv[csv.Length - 1] == '"'))
             {
                 row.Add(cell.ToString());
                 rows.Add(row);
@@ -526,6 +521,33 @@ namespace Sheet.Editor
         [SerializeField] private List<float> rowHeights = new();
 
         private Vector2 scroll;
+        private readonly List<float> columnOffsets = new();
+        private readonly List<float> rowOffsets = new();
+        private int anchorRow;
+        private int anchorColumn;
+        private bool draggingSelection;
+        private bool movingSelection;
+        private bool fillingSelection;
+        private bool fillVertical;
+        private Vector2Int fillEnd;
+        private Vector2Int dragOrigin;
+        private Vector2Int dropCell;
+        private bool editingCell;
+        private bool focusCell;
+        private bool gridFocused;
+        private bool selectingRows;
+        private bool selectingColumns;
+        private static readonly char[] QuotedCharacters = { '\t', '\r', '\n', '"' };
+        private static readonly Color SelectedCellColor = new(0.24f, 0.40f, 0.33f, 1f);
+        private static readonly Color ActiveCellColor = new(0.28f, 0.28f, 0.28f, 1f);
+
+        private int FirstRow => Mathf.Min(anchorRow, selectedRow);
+        private int LastRow => Mathf.Max(anchorRow, selectedRow);
+        private int FirstColumn => Mathf.Min(anchorColumn, selectedColumn);
+        private int LastColumn => Mathf.Max(anchorColumn, selectedColumn);
+
+        private void OnEnable() => Undo.undoRedoPerformed += Repaint;
+        private void OnDisable() => Undo.undoRedoPerformed -= Repaint;
 
         // Mở cửa sổ chỉnh sửa cho asset bulk import config được chọn.
         public static void Open(GoogleSheetBulkImportConfig target)
@@ -533,6 +555,7 @@ namespace Sheet.Editor
             var window = GetWindow<GoogleSheetBulkImportConfigWindow>(target.name);
             window.titleContent = new GUIContent(target.name);
             window.config = target;
+            window.SelectCell(0, 0, false);
             window.minSize = new Vector2(900f, 480f);
             window.Show();
         }
@@ -546,6 +569,7 @@ namespace Sheet.Editor
                 return;
             }
 
+            HandleKeyboard();
             GoogleSheetGridGUI.DrawTabBar(config.name);
             DrawToolbar();
             DrawFormulaBar();
@@ -572,22 +596,14 @@ namespace Sheet.Editor
             if (GoogleSheetGridGUI.ToolbarButton("↷", "Redo"))
                 Undo.PerformRedo();
 
-            if (GoogleSheetGridGUI.ToolbarButton("▣", "Copy selected cell"))
-                EditorGUIUtility.systemCopyBuffer = GetCellText(selectedRow, selectedColumn);
+            if (GoogleSheetGridGUI.ToolbarButton("▣", "Copy selection (Ctrl+C)"))
+                CopySelection(false);
 
-            if (GoogleSheetGridGUI.ToolbarButton("✂", "Cut selected cell"))
-            {
-                EditorGUIUtility.systemCopyBuffer = GetCellText(selectedRow, selectedColumn);
-                SetCellText(selectedRow, selectedColumn, string.Empty);
-            }
+            if (GoogleSheetGridGUI.ToolbarButton("✂", "Cut selection (Ctrl+X)"))
+                CopySelection(true);
 
-            if (GoogleSheetGridGUI.ToolbarButton("▢", "Paste into selected cell"))
-            {
-                SetCellText(
-                    selectedRow,
-                    selectedColumn,
-                    EditorGUIUtility.systemCopyBuffer);
-            }
+            if (GoogleSheetGridGUI.ToolbarButton("▢", "Paste selection (Ctrl+V)"))
+                PasteSelection();
 
             if (GoogleSheetGridGUI.ToolbarButton("Σ", "Save asset"))
                 AssetDatabase.SaveAssets();
@@ -600,11 +616,14 @@ namespace Sheet.Editor
             }
 
             GUILayout.FlexibleSpace();
+            GUI.SetNextControlName("SheetSearch");
             search = GUILayout.TextField(
                 search,
                 EditorStyles.toolbarSearchField,
                 GUILayout.Width(200f));
             EditorGUILayout.EndHorizontal();
+            if (GUI.GetNameOfFocusedControl() == "SheetSearch")
+                gridFocused = false;
         }
 
         // Thêm một dòng import mới vào cuối config.
@@ -612,7 +631,7 @@ namespace Sheet.Editor
         {
             Undo.RecordObject(config, "Add bulk import row");
             config.Items.Add(new GoogleSheetBulkImportItem());
-            selectedRow = config.Items.Count - 1;
+            SelectCell(config.Items.Count - 1, selectedColumn, false);
             EditorUtility.SetDirty(config);
         }
 
@@ -626,7 +645,7 @@ namespace Sheet.Editor
             config.Items.RemoveAt(selectedRow);
             if (selectedRow < rowHeights.Count)
                 rowHeights.RemoveAt(selectedRow);
-            selectedRow = Mathf.Clamp(selectedRow, 0, config.Items.Count - 1);
+            SelectCell(Mathf.Clamp(selectedRow, 0, Mathf.Max(0, config.Items.Count - 1)), selectedColumn, false);
             EditorUtility.SetDirty(config);
         }
 
@@ -642,6 +661,7 @@ namespace Sheet.Editor
             using (new EditorGUI.DisabledScope(selectedColumn >= EditableColumnCount))
             {
                 string value = GetCellText(selectedRow, selectedColumn);
+                GUI.SetNextControlName("SheetFormula");
                 EditorGUI.BeginChangeCheck();
                 value = EditorGUILayout.TextField(
                     value,
@@ -652,12 +672,17 @@ namespace Sheet.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+            if (GUI.GetNameOfFocusedControl() == "SheetFormula")
+            {
+                gridFocused = false;
+                editingCell = false;
+            }
         }
 
         // Vẽ toàn bộ bảng config, header, cell và vùng resize.
         private void DrawGrid()
         {
-            int rowCount = Mathf.Max(MinimumRowCount, config.Items.Count + 1);
+            int rowCount = Mathf.Max(MinimumRowCount, Mathf.Max(config.Items.Count + 1, LastRow + 1));
             GoogleSheetGridGUI.EnsureColumnWidths(
                 columnWidths,
                 ColumnCount,
@@ -666,17 +691,19 @@ namespace Sheet.Editor
                 rowHeights,
                 rowCount,
                 DefaultRowHeight);
-            float width = RowNumberWidth +
-                          GoogleSheetGridGUI.GetTotalWidth(
-                              columnWidths,
-                              ColumnCount);
-            float height = DefaultRowHeight * 2f +
-                           GoogleSheetGridGUI.GetTotalHeight(
-                               rowHeights,
-                               rowCount);
+            GoogleSheetGridGUI.BuildOffsets(columnWidths, columnOffsets, ColumnCount);
+            GoogleSheetGridGUI.BuildOffsets(rowHeights, rowOffsets, rowCount);
+            float width = RowNumberWidth + columnOffsets[ColumnCount];
+            float height = DefaultRowHeight * 2f + rowOffsets[rowCount];
 
             scroll = EditorGUILayout.BeginScrollView(scroll);
             Rect canvas = GUILayoutUtility.GetRect(width, height);
+            int selectionControl = GUIUtility.GetControlID("SheetSelection".GetHashCode(), FocusType.Passive);
+            int firstVisibleRow = Mathf.Max(0, GoogleSheetGridGUI.GetItemAtOffset(rowOffsets, scroll.y - DefaultRowHeight * 2f) - 1);
+            int lastVisibleRow = Mathf.Min(rowCount - 1, GoogleSheetGridGUI.GetItemAtOffset(rowOffsets, scroll.y + position.height - DefaultRowHeight * 2f) + 1);
+            int firstVisibleColumn = Mathf.Max(0, GoogleSheetGridGUI.GetItemAtOffset(columnOffsets, scroll.x - RowNumberWidth) - 1);
+            int lastVisibleColumn = Mathf.Min(ColumnCount - 1, GoogleSheetGridGUI.GetItemAtOffset(columnOffsets, scroll.x + position.width - RowNumberWidth) + 1);
+
 
             DrawHeaderCell(
                 new Rect(
@@ -686,7 +713,7 @@ namespace Sheet.Editor
                     DefaultRowHeight),
                 "Alias");
 
-            for (int column = 0; column < ColumnCount; column++)
+            for (int column = firstVisibleColumn; column <= lastVisibleColumn; column++)
             {
                 string alias = column < Aliases.Length ? Aliases[column] : string.Empty;
                 DrawHeaderCell(GetCellRect(canvas, -2, column), alias);
@@ -700,30 +727,28 @@ namespace Sheet.Editor
                     DefaultRowHeight),
                 string.Empty);
 
-            for (int column = 0; column < ColumnCount; column++)
+            for (int column = firstVisibleColumn; column <= lastVisibleColumn; column++)
             {
                 Rect headerRect = GetCellRect(canvas, -1, column);
                 GoogleSheetGridGUI.DrawHeaderCell(
                     headerRect,
                     ((char)('A' + column)).ToString(),
-                    column == selectedColumn);
+                    column >= FirstColumn && column <= LastColumn);
                 GoogleSheetGridGUI.HandleColumnResize(
                     new Rect(
                         headerRect.x,
                         canvas.y,
                         headerRect.width,
-                        height),
+                        DefaultRowHeight * 2f),
                     column,
                     columnWidths,
                     Repaint);
             }
 
-            for (int row = 0; row < rowCount; row++)
+            for (int row = firstVisibleRow; row <= lastVisibleRow; row++)
             {
                 float rowY = canvas.y + DefaultRowHeight * 2f +
-                             GoogleSheetGridGUI.GetRowOffset(
-                                 rowHeights,
-                                 row);
+                             rowOffsets[row];
                 Rect rowRect = new(
                     canvas.x,
                     rowY,
@@ -736,36 +761,42 @@ namespace Sheet.Editor
                         RowNumberWidth,
                         rowHeights[row]),
                     (row + 1).ToString(),
-                    row == selectedRow);
+                    row >= FirstRow && row <= LastRow);
                 GoogleSheetGridGUI.HandleRowResize(
-                    rowRect,
+                    new Rect(rowRect.x, rowRect.y, RowNumberWidth, rowRect.height),
                     row,
                     rowHeights,
                     Repaint);
 
-                for (int column = 0; column < ColumnCount; column++)
+                for (int column = firstVisibleColumn; column <= lastVisibleColumn; column++)
                     DrawDataCell(GetCellRect(canvas, row, column), row, column);
             }
 
+            HandleGridMouse(canvas, rowCount, EditableColumnCount, selectionControl);
             EditorGUILayout.EndScrollView();
         }
 
         // Vẽ và xử lý nhập liệu cho một ô config.
         private void DrawDataCell(Rect rect, int row, int column)
         {
-            string text = GetCellText(row, column);
-            bool selected = row == selectedRow && column == selectedColumn;
+            if (Event.current.type != EventType.Repaint &&
+                !(editingCell && row == selectedRow && column == selectedColumn))
+                return;
+
+            string value = GetCellText(row, column);
+            bool selected = row >= FirstRow && row <= LastRow &&
+                            column >= FirstColumn && column <= LastColumn;
             bool matchesSearch =
                 !string.IsNullOrWhiteSpace(search) &&
-                text.Contains(search, StringComparison.OrdinalIgnoreCase);
-            GoogleSheetGridGUI.DrawCell(rect, selected, matchesSearch);
+                value.Contains(search, StringComparison.OrdinalIgnoreCase);
 
-            if (Event.current.type == EventType.MouseDown &&
-                rect.Contains(Event.current.mousePosition))
+            GoogleSheetGridGUI.DrawCell(rect, false, matchesSearch);
+            if (selected)
             {
-                selectedRow = row;
-                selectedColumn = column;
-                Repaint();
+                bool active = row == selectedRow && column == selectedColumn;
+                EditorGUI.DrawRect(
+                    new Rect(rect.x, rect.y, rect.width - 1f, rect.height - 1f),
+                    active ? ActiveCellColor : SelectedCellColor);
             }
 
             Rect fieldRect = new Rect(
@@ -774,16 +805,376 @@ namespace Sheet.Editor
                 rect.width - 2f,
                 rect.height - 2f);
 
-            if (column >= EditableColumnCount)
+            if (editingCell && row == selectedRow && column == selectedColumn)
+            {
+                GUI.SetNextControlName("SheetCell");
+                EditorGUI.BeginChangeCheck();
+                value = EditorGUI.TextField(fieldRect, value, GoogleSheetGridGUI.CellStyle);
+                if (EditorGUI.EndChangeCheck())
+                    SetCellText(row, column, value);
+                if (focusCell)
+                {
+                    GUI.FocusControl("SheetCell");
+                    focusCell = false;
+                }
+            }
+            else
+                GUI.Label(fieldRect, value, GoogleSheetGridGUI.CellStyle);
+        }
+
+        private void SelectCell(int row, int column, bool extend)
+        {
+            selectedRow = Mathf.Max(0, row);
+            selectedColumn = Mathf.Clamp(column, 0, EditableColumnCount - 1);
+            if (!extend)
+            {
+                anchorRow = selectedRow;
+                anchorColumn = selectedColumn;
+            }
+            editingCell = false;
+            gridFocused = true;
+            if (Event.current != null)
+                GUI.FocusControl(null);
+            Repaint();
+        }
+
+        private void HandleKeyboard()
+        {
+            Event current = Event.current;
+            if (!gridFocused)
                 return;
 
-            EditorGUI.BeginChangeCheck();
-            text = EditorGUI.TextField(
-                fieldRect,
-                text,
-                GoogleSheetGridGUI.CellStyle);
-            if (EditorGUI.EndChangeCheck())
-                SetCellText(row, column, text);
+            if (editingCell)
+            {
+                if (current.type == EventType.KeyDown &&
+                    (current.keyCode == KeyCode.Return || current.keyCode == KeyCode.KeypadEnter ||
+                     current.keyCode == KeyCode.Tab || current.keyCode == KeyCode.Escape))
+                {
+                    int step = current.shift ? -1 : 1;
+                    SelectCell(selectedRow + (current.keyCode == KeyCode.Return || current.keyCode == KeyCode.KeypadEnter ? step : 0),
+                        selectedColumn + (current.keyCode == KeyCode.Tab ? step : 0), false);
+                    current.Use();
+                }
+                return;
+            }
+
+            string command = null;
+            if (current.type == EventType.ValidateCommand || current.type == EventType.ExecuteCommand)
+                command = current.commandName;
+            else if (current.type == EventType.KeyDown && (current.control || current.command))
+            {
+                switch (current.keyCode)
+                {
+                    case KeyCode.C: command = "Copy"; break;
+                    case KeyCode.X: command = "Cut"; break;
+                    case KeyCode.V: command = "Paste"; break;
+                    case KeyCode.A: command = "SelectAll"; break;
+                    case KeyCode.Z: command = current.shift ? "Redo" : "Undo"; break;
+                    case KeyCode.Y: command = "Redo"; break;
+                }
+            }
+
+            if (command == "Copy" || command == "Cut" || command == "Paste" ||
+                command == "SelectAll" || command == "Undo" || command == "Redo")
+            {
+                if (current.type != EventType.ValidateCommand)
+                {
+                    switch (command)
+                    {
+                        case "Copy": CopySelection(false); break;
+                        case "Cut": CopySelection(true); break;
+                        case "Paste": PasteSelection(); break;
+                        case "Undo": Undo.PerformUndo(); break;
+                        case "Redo": Undo.PerformRedo(); break;
+                        case "SelectAll":
+                            anchorRow = anchorColumn = 0;
+                            SelectCell(Mathf.Max(0, config.Items.Count - 1), Mathf.Max(0, EditableColumnCount - 1), true);
+                            break;
+                    }
+                }
+                current.Use();
+                return;
+            }
+
+            if (current.type != EventType.KeyDown)
+                return;
+            int row = selectedRow;
+            int column = selectedColumn;
+            switch (current.keyCode)
+            {
+                case KeyCode.LeftArrow: column--; break;
+                case KeyCode.RightArrow: column++; break;
+                case KeyCode.UpArrow: row--; break;
+                case KeyCode.DownArrow: row++; break;
+                case KeyCode.Tab: column += current.shift ? -1 : 1; break;
+                case KeyCode.Return:
+                case KeyCode.KeypadEnter: row += current.shift ? -1 : 1; break;
+                case KeyCode.Delete:
+                case KeyCode.Backspace:
+                    ClearSelection();
+                    current.Use();
+                    return;
+                case KeyCode.F2:
+                    editingCell = focusCell = true;
+                    current.Use();
+                    return;
+                default:
+                    if (current.character >= ' ' && !current.control && !current.command && !current.alt)
+                    {
+                        SetCellText(row, column, current.character.ToString());
+                        editingCell = focusCell = true;
+                        current.Use();
+                    }
+                    return;
+            }
+            SelectCell(row, column, current.shift && current.keyCode != KeyCode.Tab);
+            current.Use();
+        }
+
+        private void HandleGridMouse(Rect canvas, int rowCount, int columnCount, int id)
+        {
+            Event current = Event.current;
+            if (current.type == EventType.Layout || current.type == EventType.Used)
+                return;
+            Rect first = GetCellRect(canvas, FirstRow, FirstColumn);
+            Rect last = GetCellRect(canvas, LastRow, LastColumn);
+            Rect selection = Rect.MinMaxRect(first.x, first.y, last.xMax, last.yMax);
+            DrawSelectionBorder(selection);
+            Rect fillHandle = new(selection.xMax - 8f, selection.yMax - 8f, 8f, 8f);
+            if (!editingCell)
+            {
+                EditorGUI.DrawRect(fillHandle, Color.white);
+                EditorGUI.DrawRect(new Rect(fillHandle.x + 1f, fillHandle.y + 1f, 6f, 6f), new Color(0.15f, 0.65f, 0.4f));
+                EditorGUIUtility.AddCursorRect(fillHandle, MouseCursor.ArrowPlus);
+            }
+            if (fillingSelection)
+            {
+                Rect fillFirst = GetCellRect(canvas, Mathf.Min(FirstRow, fillEnd.y), Mathf.Min(FirstColumn, fillEnd.x));
+                Rect fillLast = GetCellRect(canvas, Mathf.Max(LastRow, fillEnd.y), Mathf.Max(LastColumn, fillEnd.x));
+                DrawSelectionBorder(Rect.MinMaxRect(fillFirst.x, fillFirst.y, fillLast.xMax, fillLast.yMax));
+            }
+            if (movingSelection)
+            {
+                float x = canvas.x + RowNumberWidth + columnOffsets[dropCell.x];
+                float y = canvas.y + DefaultRowHeight * 2f + rowOffsets[dropCell.y];
+                DrawSelectionBorder(new Rect(x, y, selection.width, selection.height));
+            }
+            Rect inside = new(selection.x + 4f, selection.y + 4f, selection.width - 8f, selection.height - 8f);
+            bool onBorder = selection.Contains(current.mousePosition) && !inside.Contains(current.mousePosition);
+            if (onBorder && !editingCell && !fillHandle.Contains(current.mousePosition))
+                EditorGUIUtility.AddCursorRect(selection, MouseCursor.MoveArrow);
+
+            int row = GoogleSheetGridGUI.GetItemAtOffset(rowOffsets, current.mousePosition.y - canvas.y - DefaultRowHeight * 2f);
+            int column = Mathf.Min(columnCount - 1,
+                GoogleSheetGridGUI.GetItemAtOffset(columnOffsets, current.mousePosition.x - canvas.x - RowNumberWidth));
+
+            switch (current.GetTypeForControl(id))
+            {
+                case EventType.MouseDown when current.button == 0 && canvas.Contains(current.mousePosition) &&
+                                              current.mousePosition.x < GetCellRect(canvas, 0, columnCount - 1).xMax:
+                    if (!editingCell && fillHandle.Contains(current.mousePosition))
+                    {
+                        fillingSelection = true;
+                        fillEnd = new Vector2Int(LastColumn, LastRow);
+                        GUIUtility.hotControl = id;
+                        current.Use();
+                        break;
+                    }
+                    if (editingCell && row == selectedRow && column == selectedColumn &&
+                        current.mousePosition.x >= canvas.x + RowNumberWidth && current.mousePosition.y >= canvas.y + DefaultRowHeight * 2f)
+                        return;
+                    movingSelection = onBorder && !current.shift && current.clickCount == 1;
+                    draggingSelection = !movingSelection;
+                    dragOrigin = new Vector2Int(column, row);
+                    dropCell = new Vector2Int(FirstColumn, FirstRow);
+                    if (!movingSelection)
+                    {
+                        SelectCell(row, column, current.shift);
+                        selectingRows = current.mousePosition.x < canvas.x + RowNumberWidth;
+                        selectingColumns = current.mousePosition.y < canvas.y + DefaultRowHeight * 2f;
+                        if (selectingRows)
+                        {
+                            anchorColumn = 0;
+                            selectedColumn = columnCount - 1;
+                        }
+                        if (selectingColumns)
+                        {
+                            anchorRow = 0;
+                            selectedRow = rowCount - 1;
+                        }
+                        if (current.clickCount == 2)
+                            editingCell = focusCell = true;
+                    }
+                    GUIUtility.hotControl = id;
+                    current.Use();
+                    break;
+                case EventType.MouseDrag when GUIUtility.hotControl == id:
+                    if (fillingSelection)
+                    {
+                        int rowDistance = row < FirstRow ? FirstRow - row : Mathf.Max(0, row - LastRow);
+                        int columnDistance = column < FirstColumn ? FirstColumn - column : Mathf.Max(0, column - LastColumn);
+                        fillVertical = rowDistance >= columnDistance;
+                        fillEnd = fillVertical
+                            ? new Vector2Int(LastColumn, row)
+                            : new Vector2Int(column, LastRow);
+                    }
+                    else if (movingSelection)
+                        dropCell = new Vector2Int(Mathf.Max(0, Mathf.Min(columnCount - (LastColumn - FirstColumn + 1), FirstColumn + column - dragOrigin.x)), Mathf.Max(0, FirstRow + row - dragOrigin.y));
+                    else if (draggingSelection)
+                    {
+                        if (!selectingColumns) selectedRow = row;
+                        if (!selectingRows) selectedColumn = column;
+                    }
+                    Repaint();
+                    current.Use();
+                    break;
+                case EventType.MouseUp when GUIUtility.hotControl == id:
+                    if (fillingSelection)
+                        AutoFillSelection(current.control || current.command);
+                    if (movingSelection && dropCell != new Vector2Int(FirstColumn, FirstRow))
+                        MoveSelection(dropCell.y, dropCell.x, current.control || current.command);
+                    draggingSelection = movingSelection = fillingSelection = false;
+                    GUIUtility.hotControl = 0;
+                    current.Use();
+                    break;
+                case EventType.Ignore when GUIUtility.hotControl == id:
+                    draggingSelection = movingSelection = fillingSelection = false;
+                    GUIUtility.hotControl = 0;
+                    break;
+            }
+        }
+
+        private static void DrawSelectionBorder(Rect rect)
+        {
+            Color color = new(0.15f, 0.65f, 0.4f);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2f), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), color);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 2f, rect.height), color);
+            EditorGUI.DrawRect(new Rect(rect.xMax - 2f, rect.y, 2f, rect.height), color);
+        }
+
+        private void AutoFillSelection(bool copy)
+        {
+            int firstRow = Mathf.Min(FirstRow, fillEnd.y);
+            int lastRow = Mathf.Max(LastRow, fillEnd.y);
+            int firstColumn = Mathf.Min(FirstColumn, fillEnd.x);
+            int lastColumn = Mathf.Max(LastColumn, fillEnd.x);
+            if (firstRow == FirstRow && lastRow == LastRow && firstColumn == FirstColumn && lastColumn == LastColumn)
+                return;
+
+            string[,] source = ReadSelection();
+            var values = new string[lastRow - firstRow + 1, lastColumn - firstColumn + 1];
+            GoogleSheetGridGUI.FillAutoFillValues(source, values,
+                firstRow - FirstRow, firstColumn - FirstColumn, fillVertical, copy);
+            Undo.RecordObject(config, "Autofill selection");
+            WriteBlock(firstRow, firstColumn, values);
+        }
+
+        private string[,] ReadSelection()
+        {
+            var values = new string[LastRow - FirstRow + 1, LastColumn - FirstColumn + 1];
+            for (int row = 0; row < values.GetLength(0); row++)
+                for (int column = 0; column < values.GetLength(1); column++)
+                    values[row, column] = GetCellText(FirstRow + row, FirstColumn + column);
+            return values;
+        }
+
+        private void CopySelection(bool cut)
+        {
+            var text = new StringBuilder();
+            for (int row = FirstRow; row <= LastRow; row++)
+            {
+                if (row > FirstRow) text.Append('\n');
+                for (int column = FirstColumn; column <= LastColumn; column++)
+                {
+                    if (column > FirstColumn) text.Append('\t');
+                    string value = GetCellText(row, column);
+                    if (value.IndexOfAny(QuotedCharacters) >= 0)
+                        text.Append('"').Append(value.Replace("\"", "\"\"")).Append('"');
+                    else
+                        text.Append(value);
+                }
+            }
+            // A final record separator preserves a trailing empty row in TSV.
+            EditorGUIUtility.systemCopyBuffer = text.Append('\n').ToString();
+            if (cut) ClearSelection();
+        }
+
+        private void ClearSelection()
+        {
+            Undo.RecordObject(config, "Clear sheet selection");
+            for (int row = FirstRow; row <= LastRow && row < config.Items.Count; row++)
+                for (int column = FirstColumn; column <= LastColumn; column++)
+                    WriteCell(row, column, string.Empty);
+            TrimEmptyTrailingRows();
+            EditorUtility.SetDirty(config);
+            Repaint();
+        }
+
+        private void PasteSelection()
+        {
+            List<List<string>> rows;
+            try
+            {
+                rows = GoogleSheetBulkImporterWindow.ParseCsv(EditorGUIUtility.systemCopyBuffer, '\t');
+            }
+            catch (FormatException exception)
+            {
+                ShowNotification(new GUIContent(exception.Message));
+                return;
+            }
+            if (rows.Count == 0) rows.Add(new List<string> { string.Empty });
+            int width = 0;
+            foreach (var row in rows) width = Mathf.Max(width, row.Count);
+            if (FirstColumn + width > EditableColumnCount)
+            {
+                ShowNotification(new GUIContent("Paste must fit within config columns A–D."));
+                return;
+            }
+            var values = new string[rows.Count, width];
+            for (int row = 0; row < rows.Count; row++)
+                for (int column = 0; column < width; column++)
+                    values[row, column] = column < rows[row].Count ? rows[row][column] : string.Empty;
+            int height = values.GetLength(0);
+            int targetHeight = LastRow - FirstRow + 1;
+            int targetWidth = LastColumn - FirstColumn + 1;
+            // Repeat a copied block only when it tiles the selected range exactly.
+            if (targetHeight % height == 0 && targetWidth % width == 0)
+            {
+                var tiled = new string[targetHeight, targetWidth];
+                for (int row = 0; row < targetHeight; row++)
+                    for (int column = 0; column < targetWidth; column++)
+                        tiled[row, column] = values[row % height, column % width];
+                values = tiled;
+            }
+            Undo.RecordObject(config, "Paste sheet selection");
+            WriteBlock(FirstRow, FirstColumn, values);
+        }
+
+        private void MoveSelection(int row, int column, bool copy)
+        {
+            string[,] values = ReadSelection();
+            Undo.RecordObject(config, copy ? "Copy sheet selection" : "Move sheet selection");
+            if (!copy)
+                for (int r = FirstRow; r <= LastRow && r < config.Items.Count; r++)
+                    for (int c = FirstColumn; c <= LastColumn; c++)
+                        WriteCell(r, c, string.Empty);
+            WriteBlock(row, column, values);
+        }
+
+        private void WriteBlock(int row, int column, string[,] values)
+        {
+            for (int r = 0; r < values.GetLength(0); r++)
+                for (int c = 0; c < values.GetLength(1); c++)
+                    WriteCell(row + r, column + c, values[r, c]);
+            anchorRow = row;
+            anchorColumn = column;
+            selectedRow = row + values.GetLength(0) - 1;
+            selectedColumn = column + values.GetLength(1) - 1;
+            editingCell = false;
+            TrimEmptyTrailingRows();
+            EditorUtility.SetDirty(config);
+            Repaint();
         }
 
         // Vẽ một ô header bằng style chung của grid.
@@ -798,14 +1189,14 @@ namespace Sheet.Editor
             float y = row < 0
                 ? canvas.y + (row + 2) * DefaultRowHeight
                 : canvas.y + DefaultRowHeight * 2f +
-                  GoogleSheetGridGUI.GetRowOffset(rowHeights, row);
+                  rowOffsets[row];
             float height = row < 0
                 ? DefaultRowHeight
                 : rowHeights[row];
 
             return new Rect(
                 canvas.x + RowNumberWidth +
-                GoogleSheetGridGUI.GetColumnOffset(columnWidths, column),
+                columnOffsets[column],
                 y,
                 columnWidths[column],
                 height);
@@ -841,8 +1232,18 @@ namespace Sheet.Editor
         {
             if (row < 0 || column < 0 || column >= EditableColumnCount)
                 return;
-
             Undo.RecordObject(config, "Edit bulk import cell");
+            WriteCell(row, column, value);
+            TrimEmptyTrailingRows();
+            EditorUtility.SetDirty(config);
+        }
+
+        private void WriteCell(int row, int column, string value)
+        {
+            if (row < 0 || column < 0 || column >= EditableColumnCount)
+                return;
+
+
             while (config.Items.Count <= row)
                 config.Items.Add(new GoogleSheetBulkImportItem());
 
@@ -866,8 +1267,8 @@ namespace Sheet.Editor
                     break;
             }
 
-            TrimEmptyTrailingRows();
-            EditorUtility.SetDirty(config);
+
+
         }
 
         // Xóa các dòng trống ở cuối config trước khi lưu.
@@ -919,6 +1320,122 @@ namespace Sheet.Editor
 
     internal static class GoogleSheetGridGUI
     {
+        internal static void BuildOffsets(List<float> sizes, List<float> offsets, int count)
+        {
+            while (offsets.Count <= count)
+                offsets.Add(0f);
+            if (offsets.Count > count + 1)
+                offsets.RemoveRange(count + 1, offsets.Count - count - 1);
+            offsets[0] = 0f;
+            for (int i = 0; i < count; i++)
+                offsets[i + 1] = offsets[i] + sizes[i];
+        }
+
+        internal static int GetItemAtOffset(List<float> offsets, float position)
+        {
+            int low = 0;
+            int high = offsets.Count - 2;
+            while (low < high)
+            {
+                int middle = low + (high - low) / 2;
+                if (position < offsets[middle + 1])
+                    high = middle;
+                else
+                    low = middle + 1;
+            }
+            return low;
+        }
+
+        internal static void FillAutoFillValues(string[,] source, string[,] values, int rowOffset, int columnOffset, bool vertical, bool copy)
+        {
+            int sourceHeight = source.GetLength(0);
+            int sourceWidth = source.GetLength(1);
+            int laneCount = vertical ? sourceWidth : sourceHeight;
+            int sourceCount = vertical ? sourceHeight : sourceWidth;
+            int targetCount = vertical ? values.GetLength(0) : values.GetLength(1);
+            for (int lane = 0; lane < laneCount; lane++)
+            {
+                decimal start = 0;
+                decimal step = 0;
+                string prefix = string.Empty;
+                int padding = 0;
+                bool series = !copy && sourceCount >= 2 && TryGetFillNumber(
+                    source[vertical ? 0 : lane, vertical ? lane : 0], out start, out prefix, out padding);
+                if (series)
+                {
+                    try
+                    {
+                        for (int i = 1; i < sourceCount; i++)
+                        {
+                            if (!TryGetFillNumber(source[vertical ? i : lane, vertical ? lane : i],
+                                    out decimal number, out string nextPrefix, out _) || nextPrefix != prefix)
+                            {
+                                series = false;
+                                break;
+                            }
+                            if (i == 1)
+                                step = number - start;
+                            else if (number != start + step * i)
+                            {
+                                series = false;
+                                break;
+                            }
+                        }
+                    }
+                    catch (OverflowException)
+                    {
+                        series = false;
+                    }
+                }
+                string format = padding > 0 ? new string('0', padding) : null;
+                for (int i = 0; i < targetCount; i++)
+                {
+                    int position = i + (vertical ? rowOffset : columnOffset);
+                    int sourcePosition = (position % sourceCount + sourceCount) % sourceCount;
+                    string value = source[vertical ? sourcePosition : lane, vertical ? lane : sourcePosition];
+                    if (series && (position < 0 || position >= sourceCount))
+                    {
+                        try
+                        {
+                            decimal result = start + step * position;
+                            value = prefix + (padding > 0 && result == decimal.Truncate(result)
+                                ? result.ToString(format, CultureInfo.InvariantCulture)
+                                : result.ToString(CultureInfo.InvariantCulture));
+                        }
+                        catch (OverflowException)
+                        {
+                            // Keep the repeated source value when the numeric series exceeds decimal range.
+                        }
+                    }
+                    values[vertical ? i : lane, vertical ? lane : i] = value;
+                }
+            }
+        }
+
+        private static bool TryGetFillNumber(string value, out decimal number, out string prefix, out int padding)
+        {
+            prefix = string.Empty;
+            padding = 0;
+            if (decimal.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture, out number))
+            {
+                if (value.Length > 1 && value[0] == '0' && value.IndexOf('.') < 0)
+                    padding = value.Length;
+                return true;
+            }
+
+            int index = value.Length;
+            while (index > 0 && value[index - 1] >= '0' && value[index - 1] <= '9')
+                index--;
+            if (index == value.Length)
+                return false;
+            string digits = value.Substring(index);
+            prefix = value.Substring(0, index);
+            if (digits.Length > 1 && digits[0] == '0')
+                padding = digits.Length;
+            return decimal.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out number);
+        }
+
         private const float MinimumColumnWidth = 40f;
         private const float MinimumRowHeight = 20f;
         private const float ResizeHandleWidth = 14f;
