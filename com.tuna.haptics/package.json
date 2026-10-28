@@ -1,0 +1,13 @@
+{
+  "displayName": "Tuna Haptics",
+  "description": "Nice Vibrations integration for mobile haptic feedback.",
+  "dependencies": {
+  },
+  "name": "com.tuna.haptics",
+  "author": {
+    "name": "TunaPC"
+  },
+  "unity": "2020.3",
+  "unityRelease": "0f1",
+  "version": "0.0.1"
+}

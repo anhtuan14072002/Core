@@ -1,6 +1,6 @@
 {
   "displayName": "Tuna UI",
-  "description": "",
+  "description": "Reusable uGUI controls, layouts, loading screens, menus and tween helpers.",
   "dependencies": {},
   "name": "com.tuna.ui",
   "author": {

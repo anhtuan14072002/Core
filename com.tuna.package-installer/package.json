@@ -1,6 +1,6 @@
 {
-  "displayName": "Tuna package installer",
-  "description": "",
+  "displayName": "Tuna Package Installer",
+  "description": "Unity Editor installer for Tuna and supported third-party packages.",
   "dependencies": {
   },
   "name": "com.tuna.package-installer",

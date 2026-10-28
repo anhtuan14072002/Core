@@ -1,11 +1,10 @@
 {
-    "name": "com.tuna.v.runtime",
+    "name": "com.tuna.core.editor",
     "rootNamespace": "",
     "references": [
-        "GUID:2c3f48364a5004fd3a152fbdf5fea703",
-        "GUID:06ab1c341392b4a318f67b84e0da6aab"
+        "com.tuna.core"
     ],
-    "includePlatforms": [],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

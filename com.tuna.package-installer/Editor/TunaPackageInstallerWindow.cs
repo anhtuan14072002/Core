@@ -11,16 +11,13 @@ namespace Tuna.PackageInstaller.Editor
 
         private readonly List<PackageInfo> _tunaOnlyPackages = new()
         {
-            new("Tuna / Comon",        "com.tuna.comon"),
-            new("Tuna / Config",       "com.tuna.config"),
-            new("Tuna / Core",         "com.tuna.core"),
-            new("Tuna / Data",         "com.tuna.data"),
-            new("Tuna / UI",           "com.tuna.ui"),
-            new("Tuna / V",            "com.tuna.v"),
-            new("Tuna / Tools",        "com.tuna.tools"),
-            // new("Tuna / Zenject",      "com.tuna.zenject"),
-            new("Tuna / Custom",       "com.tuna.custom"),
-            new("Tuna / Framework",       "com.tuna.framework"),
+            new("Tuna / Core",               "com.tuna.core"),
+            new("Tuna / UI",                 "com.tuna.ui"),
+            new("Tuna / Gameplay Framework", "com.tuna.framework"),
+            new("Tuna / Save",               "com.tuna.save"),
+            new("Tuna / Tools",              "com.tuna.tools"),
+            new("Tuna / Haptics",            "com.tuna.haptics"),
+            new("Tuna / V",                  "com.tuna.v"),
         };
 
         private readonly List<PackageInfo> _thirdPartyOnlyPackages = new()

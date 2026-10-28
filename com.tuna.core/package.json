@@ -1,7 +1,8 @@
 {
   "displayName": "Tuna Core",
-  "description": "",
+  "description": "Game lifecycle, managers, signals and shared runtime utilities.",
   "dependencies": {
+    "com.unity.ugui": "1.0.0"
   },
   "name": "com.tuna.core",
   "author": {

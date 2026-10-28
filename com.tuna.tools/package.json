@@ -1,6 +1,6 @@
 {
   "displayName": "Tuna Tools",
-  "description": "",
+  "description": "Google Sheets and CSV import tools with cached runtime config access.",
   "dependencies": {},
   "name": "com.tuna.tools",
   "author": {

@@ -1,9 +1,9 @@
 {
-  "displayName": "Tuna Comon",
-  "description": "",
+  "displayName": "Tuna Save",
+  "description": "Easy Save 3 integration for local persistence.",
   "dependencies": {
   },
-  "name": "com.tuna.comon",
+  "name": "com.tuna.save",
   "author": {
     "name": "TunaPC"
   },

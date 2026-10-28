@@ -41,7 +41,7 @@ namespace RogueliteToolkit.SkillTree.Editor
         {
             rootVisualElement.Clear();
             StyleSheet styleSheet = AssetDatabase.LoadAssetAtPath<StyleSheet>(
-                "Packages/com.tuna.framework/Runtime/Framework/RogueliteToolkit/Editor/" +
+                "Packages/com.tuna.framework/Editor/" +
                 "SkillTree/SkillTreeAuthoringWindow.uss");
             if (styleSheet != null)
                 rootVisualElement.styleSheets.Add(styleSheet);

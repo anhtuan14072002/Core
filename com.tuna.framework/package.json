@@ -1,6 +1,6 @@
 {
-  "displayName": "Tuna Framework",
-  "description": "",
+  "displayName": "Tuna Gameplay Framework",
+  "description": "Roguelite stats, effects, cards, equipment and skill trees.",
   "dependencies": {
   },
   "name": "com.tuna.framework",

@@ -1,6 +1,6 @@
 {
   "displayName": "Tuna V",
-  "description": "",
+  "description": "vHierarchy and vTabs enhancements for the Unity Editor.",
   "dependencies": {
   },
   "name": "com.tuna.v",
