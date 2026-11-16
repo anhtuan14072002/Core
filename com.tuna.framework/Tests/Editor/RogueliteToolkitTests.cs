@@ -6,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor;
 using RogueliteToolkit.Cards;
 using RogueliteToolkit.Effects;
+using RogueliteToolkit.Resources;
 using RogueliteToolkit.SkillTree;
 using RogueliteToolkit.SkillTree.Authoring;
 using RogueliteToolkit.SkillTree.Editor;
@@ -20,10 +21,46 @@ namespace RogueliteToolkit.Tests
     public sealed class RogueliteToolkitTests
     {
         [Test]
+        public void ResourceDefinition_IdSurvivesRenameAndReimport_DuplicateGetsNewId()
+        {
+            string folder = "Assets/ResourceIdTest_" + Guid.NewGuid().ToString("N");
+            AssetDatabase.CreateFolder("Assets", folder.Substring("Assets/".Length));
+            try
+            {
+                string path = folder + "/Resource.asset";
+                ResourceDefinition resource = ScriptableObject.CreateInstance<ResourceDefinition>();
+                AssetDatabase.CreateAsset(resource, path);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                int id = resource.Id;
+                Assert.That(id, Is.GreaterThan(0));
+                Assert.That(AssetDatabase.RenameAsset(path, "Renamed"), Is.Empty);
+                path = folder + "/Renamed.asset";
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+                Assert.That(resource.Id, Is.EqualTo(id));
+                string duplicatePath = folder + "/Duplicate.asset";
+                Assert.That(AssetDatabase.CopyAsset(path, duplicatePath), Is.True);
+                AssetDatabase.ImportAsset(duplicatePath, ImportAssetOptions.ForceSynchronousImport);
+                ResourceDefinition duplicate = AssetDatabase.LoadAssetAtPath<ResourceDefinition>(duplicatePath);
+                Assert.That(duplicate.Id, Is.GreaterThan(0));
+                Assert.That(duplicate.Id, Is.Not.EqualTo(id));
+            }
+            finally
+            {
+                AssetDatabase.DeleteAsset(folder);
+            }
+        }
+
+        [Test]
         public void SkillTreeAuthoring_BakePreservesView_ResetIsExplicitAndUndoable()
         {
             string folder = "Assets/SkillTreeBakeTest_" + Guid.NewGuid().ToString("N");
             AssetDatabase.CreateFolder("Assets", folder.Substring("Assets/".Length));
+            ResourceDefinition coal = ScriptableObject.CreateInstance<ResourceDefinition>();
+            ResourceDefinition diamond = ScriptableObject.CreateInstance<ResourceDefinition>();
+            ResourceDefinition quartz = ScriptableObject.CreateInstance<ResourceDefinition>();
+            AssetDatabase.CreateAsset(coal, folder + "/Coal.asset");
+            AssetDatabase.CreateAsset(diamond, folder + "/Diamond.asset");
+            AssetDatabase.CreateAsset(quartz, folder + "/Quartz.asset");
             GameObject root = new("Bake View Test", typeof(RectTransform), typeof(SkillTreeAuthoring));
             SkillTreeAuthoringWindow window = ScriptableObject.CreateInstance<SkillTreeAuthoringWindow>();
             try
@@ -38,7 +75,7 @@ namespace RogueliteToolkit.Tests
                 SkillNodeAuthoring node = child.GetComponent<SkillNodeAuthoring>();
                 SetField(node, "_id", "node");
                 SetField(node, "_costs", new[] { 7d });
-                SetField(node, "_costResourceType", SkillTreeResourcesType.Coal);
+                SetField(node, "_costResourceType", coal);
                 MethodInfo addResource = typeof(SkillTreeAuthoringWindow).Assembly
                     .GetType("RogueliteToolkit.SkillTree.Editor.SkillNodeDataInspector")
                     .GetMethod("AddResourceColumn", BindingFlags.Static | BindingFlags.NonPublic);
@@ -46,13 +83,13 @@ namespace RogueliteToolkit.Tests
                 {
                     addResource.Invoke(null, new object[] { serialized, 1 });
                     SerializedProperty extra = serialized.FindProperty("_additionalCosts").GetArrayElementAtIndex(0);
-                    extra.FindPropertyRelative("_resource").intValue = (int)SkillTreeResourcesType.Diamond;
+                    extra.FindPropertyRelative("_resource").objectReferenceValue = diamond;
                     extra.FindPropertyRelative("_costs").GetArrayElementAtIndex(0).doubleValue = 11d;
                     addResource.Invoke(null, new object[] { serialized, 1 });
                     SerializedProperty added = serialized.FindProperty("_additionalCosts").GetArrayElementAtIndex(1);
-                    Assert.That(added.FindPropertyRelative("_resource").intValue, Is.EqualTo(0));
+                    Assert.That(added.FindPropertyRelative("_resource").objectReferenceValue, Is.Null);
                     Assert.That(added.FindPropertyRelative("_costs").GetArrayElementAtIndex(0).doubleValue, Is.Zero);
-                    added.FindPropertyRelative("_resource").intValue = (int)SkillTreeResourcesType.Quartz;
+                    added.FindPropertyRelative("_resource").objectReferenceValue = quartz;
                     added.FindPropertyRelative("_costs").GetArrayElementAtIndex(0).doubleValue = 13d;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                 }
@@ -93,9 +130,9 @@ namespace RogueliteToolkit.Tests
                     Assert.That(graph.viewTransform.position, Is.EqualTo(new Vector3(23f, 47f, 0f)));
                     Assert.That(output.Nodes[0].Costs[0], Is.EqualTo(7d));
                     Assert.That(output.Nodes[0].CostResourceCount, Is.EqualTo(3));
-                    Assert.That(output.Nodes[0].GetCostResourceTypeForLevel(1, 1), Is.EqualTo(SkillTreeResourcesType.Diamond));
+                    Assert.That(output.Nodes[0].GetCostResourceTypeForLevel(1, 1), Is.EqualTo(diamond));
                     Assert.That(output.Nodes[0].GetCostForLevel(1, 1), Is.EqualTo(11d));
-                    Assert.That(output.Nodes[0].GetCostResourceTypeForLevel(1, 2), Is.EqualTo(SkillTreeResourcesType.Quartz));
+                    Assert.That(output.Nodes[0].GetCostResourceTypeForLevel(1, 2), Is.EqualTo(quartz));
                     Assert.That(output.Nodes[0].GetCostForLevel(1, 2), Is.EqualTo(13d));
                     Assert.That(node.Data, Is.SameAs(output.Nodes[0].Data));
                 }
@@ -495,24 +532,27 @@ namespace RogueliteToolkit.Tests
         }
 
         [Test]
-        public void CostResourceType_MigratesFirstLegacyResourceForAllLevels()
+        public void CostResourceType_PreservesCustomResourceForAllLevels()
         {
             SkillNodeDefinition node = Node("resources", 3, new[] { 10, 20, 30 });
-            SetField(node, "_costResourceTypes", new[] { SkillTreeResourcesType.Dirt, SkillTreeResourcesType.Emerald });
+            ResourceDefinition resource = ScriptableObject.CreateInstance<ResourceDefinition>();
+            resource.name = "CustomProjectResource";
+            SetField(node, "_costResourceType", resource);
             SkillNodeDataSO data = ScriptableObject.CreateInstance<SkillNodeDataSO>();
             try
             {
                 data.CopyFrom(node);
                 node.SetData(data);
-                Assert.That(node.GetCostResourceTypeForLevel(1), Is.EqualTo(SkillTreeResourcesType.Dirt));
-                Assert.That(node.GetCostResourceTypeForLevel(2), Is.EqualTo(SkillTreeResourcesType.Dirt));
-                Assert.That(node.GetCostResourceTypeForLevel(3), Is.EqualTo(SkillTreeResourcesType.Dirt));
+                Assert.That(node.GetCostResourceTypeForLevel(1), Is.EqualTo(resource));
+                Assert.That(node.GetCostResourceTypeForLevel(2), Is.EqualTo(resource));
+                Assert.That(node.GetCostResourceTypeForLevel(3), Is.EqualTo(resource));
                 Assert.That(node.GetCostForLevel(2), Is.EqualTo(20));
                 Assert.Throws<ArgumentOutOfRangeException>(() => node.GetCostResourceTypeForLevel(0));
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(data);
+                UnityEngine.Object.DestroyImmediate(resource);
             }
         }
 
@@ -749,6 +789,36 @@ namespace RogueliteToolkit.Tests
         }
 
         [Test]
+        public void StatSet_RecalculatesAfterBaseAndModifierChanges()
+        {
+            StatDefinition stat = CreateStat("damage");
+            GameObject owner = new("Stat Cache Test");
+            StatSet stats = owner.AddComponent<StatSet>();
+
+            try
+            {
+                Assert.That(stats.GetValue(stat), Is.Zero);
+                stats.SetBaseValue(stat, 10f);
+                Assert.That(stats.GetValue(stat), Is.EqualTo(10f));
+                stats.AddOrUpdateModifier(stat, new StatModifier("flat", "card", StatModifierOperation.AddFlat, 5f));
+                Assert.That(stats.GetValue(stat), Is.EqualTo(15f));
+                stats.AddOrUpdateModifier(stat, new StatModifier("flat", "card", StatModifierOperation.AddFlat, 8f));
+                Assert.That(stats.GetValue(stat), Is.EqualTo(18f));
+                stats.AddOrUpdateModifier(stat, new StatModifier("percent", "card", StatModifierOperation.AddPercent, 50f));
+                Assert.That(stats.GetValue(stat), Is.EqualTo(27f));
+                stats.RemoveModifier(stat, "percent");
+                Assert.That(stats.GetValue(stat), Is.EqualTo(18f));
+                stats.RemoveModifiersFromSource("card");
+                Assert.That(stats.GetValue(stat), Is.EqualTo(10f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(owner);
+                UnityEngine.Object.DestroyImmediate(stat);
+            }
+        }
+
+        [Test]
         public void Card_AddRemoveClearAndRestore_ReconstructsWithoutDuplicates()
         {
             StatDefinition stat = CreateStat("damage");
@@ -793,6 +863,39 @@ namespace RogueliteToolkit.Tests
                 UnityEngine.Object.DestroyImmediate(database);
                 UnityEngine.Object.DestroyImmediate(card);
                 UnityEngine.Object.DestroyImmediate(stat);
+            }
+        }
+
+        [Test]
+        public void SkillTree_ChecksCombinedCostBeforePurchase()
+        {
+            SkillNodeDefinition node = Node("upgrade", 1, new[] { 4 });
+            SkillResourceCost additionalCost = new();
+            SetField(additionalCost, "_costs", new[] { 4d });
+            node.SetAdditionalCosts(new[] { additionalCost });
+            SkillTreeDefinition definition = ScriptableObject.CreateInstance<SkillTreeDefinition>();
+            try
+            {
+                definition.Configure("mastery", new[] { node }, Array.Empty<SkillConnectionDefinition>());
+                SkillTreeState state = new(definition);
+                TestWallet wallet = new(7);
+                GameplayEffectContext context = new GameplayEffectContext().Register<ISkillPointWallet>(wallet);
+
+                Assert.That(state.CanPurchase(node, context), Is.False);
+                Assert.That(state.Purchase(node, context), Is.False);
+                Assert.That(wallet.Points, Is.EqualTo(7));
+                Assert.That(state.GetLevel(node), Is.Zero);
+
+                TestWallet fundedWallet = new(8);
+                context = new GameplayEffectContext().Register<ISkillPointWallet>(fundedWallet);
+                Assert.That(state.CanPurchase(node, context), Is.True);
+                Assert.That(state.Purchase(node, context), Is.True);
+                Assert.That(fundedWallet.Points, Is.Zero);
+                Assert.That(state.GetLevel(node), Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(definition);
             }
         }
 
@@ -958,17 +1061,21 @@ namespace RogueliteToolkit.Tests
         {
             public double Points { get; private set; }
 
-            public bool TrySpend(SkillNodeDefinition node, int level)
+            public bool CanSpend(SkillNodeDefinition node, int level) => CanSpend(GetTotalCost(node, level));
+
+            public bool TrySpend(SkillNodeDefinition node, int level) => TrySpend(GetTotalCost(node, level));
+
+            private static double GetTotalCost(SkillNodeDefinition node, int level)
             {
                 double total = 0;
                 for (int i = 0; i < node.CostResourceCount; i++) total += node.GetCostForLevel(level, i);
-                return TrySpend(total);
+                return total;
             }
 
             public TestWallet(int points) => Points = points;
-            public bool CanSpend(double amount, SkillTreeResourcesType resourceType = SkillTreeResourcesType.None) => amount >= 0 && Points >= amount;
+            public bool CanSpend(double amount, ResourceDefinition resourceType = null) => amount >= 0 && Points >= amount;
 
-            public bool TrySpend(double amount, SkillTreeResourcesType resourceType = SkillTreeResourcesType.None)
+            public bool TrySpend(double amount, ResourceDefinition resourceType = null)
             {
                 if (!CanSpend(amount))
                     return false;

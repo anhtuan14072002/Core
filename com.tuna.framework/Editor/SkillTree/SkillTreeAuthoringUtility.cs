@@ -468,7 +468,7 @@ namespace RogueliteToolkit.SkillTree.Editor
             rect.offsetMax = Vector2.zero;
         }
 
-        private static void SetNodeIdentity(
+        internal static void SetNodeIdentity(
             SkillNodeAuthoring node, string id, string displayName,
             bool initializeCosts)
         {
@@ -480,7 +480,7 @@ namespace RogueliteToolkit.SkillTree.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static string GenerateUniqueId(SkillTreeAuthoring tree, string seed)
+        internal static string GenerateUniqueId(SkillTreeAuthoring tree, string seed)
         {
             string normalized = string.IsNullOrWhiteSpace(seed)
                 ? "skill_node"

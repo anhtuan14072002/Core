@@ -37,6 +37,8 @@ MonoBehaviour:
     assemblyNames:
     - Assembly-CSharp
     - EasySave3
+    - LitMotion
+    - LitMotion.Extensions
     - Lofelt.NiceVibrations
     - ParticleImage
     - PrimeTween.Runtime

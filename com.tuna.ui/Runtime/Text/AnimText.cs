@@ -1,5 +1,6 @@
-﻿using Cysharp.Threading.Tasks;
-using PrimeTween;
+using Cysharp.Threading.Tasks;
+using LitMotion;
+using LitMotion.Extensions;
 using TMPro;
 using UnityEngine;
 
@@ -33,7 +34,11 @@ namespace Core
                     if (Time.time - lastTweenTime >= tweenInterval)
                     {
                         if (icon == null) return;
-                        Tween.PunchScale(icon.transform, new Vector3(0.35f, 0.35f), 0.1f, frequency);
+                        var iconTransform = icon.transform;
+                        _ = LMotion.Punch.Create(iconTransform.localScale, new Vector3(0.35f, 0.35f), 0.1f)
+                            .WithFrequency(Mathf.Max(1, Mathf.RoundToInt(frequency)))
+                            .BindToLocalScale(iconTransform)
+                            .AddTo(icon);
                         lastTweenTime = Time.time;
                     }
                 }

@@ -32,8 +32,8 @@ namespace RogueliteToolkit.Stats
         private void OnValidate()
         {
             _id = _id?.Trim();
-            if (_hasMinimum && _hasMaximum && _maximum < _minimum)
-                _maximum = _minimum;
+            if (_hasMinimum && _hasMaximum)
+                _maximum = Mathf.Max(_minimum, _maximum);
         }
     }
 }

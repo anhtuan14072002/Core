@@ -38,7 +38,7 @@ namespace RogueliteToolkit.Stats
                 _stats.Add(entry.Definition, new RuntimeStat(entry.Definition, entry.Value));
             }
             _initialized = true;
-        }
+        } 
 
         public float GetValue(StatDefinition definition)
         {

@@ -350,7 +350,7 @@ namespace RogueliteToolkit.SkillTree.Editor
             SerializedProperty additional = data.FindProperty("_additionalCosts");
             int index = additional.arraySize++;
             SerializedProperty column = additional.GetArrayElementAtIndex(index);
-            column.FindPropertyRelative("_resource").intValue = (int)SkillTreeResourcesType.None;
+            column.FindPropertyRelative("_resource").objectReferenceValue = null;
             SerializedProperty prices = column.FindPropertyRelative("_costs");
             prices.arraySize = count;
             for (int i = 0; i < count; i++) prices.GetArrayElementAtIndex(i).doubleValue = 0;

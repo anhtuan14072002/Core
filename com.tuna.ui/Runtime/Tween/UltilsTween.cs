@@ -1,23 +1,36 @@
-﻿using PrimeTween;
+using LitMotion;
+using LitMotion.Extensions;
 using UnityEngine;
 using UnityEngine.UI;
-using Vector3 = UnityEngine.Vector3;
 
-namespace Core
+namespace WZ
 {
     public static class UltilsTween
     {
-        public static void DoScaleRect(this RectTransform rect, bool instant, Vector3 scale, float duration, Ease ease)
+        public static MotionHandle DoScaleRect(this RectTransform rect, bool instant, Vector3 scale, float duration, Ease ease)
         {
-            if (rect.localScale == scale) return;
-            if (instant) rect.localScale = scale;
-            else Tween.Scale(rect, new TweenSettings<Vector3>(scale, duration, ease, useUnscaledTime: true));
+            if (instant)
+            {
+                rect.localScale = scale;
+                return default;
+            }
+
+            return LMotion.Create(rect.localScale, scale, duration)
+                .WithEase(ease)
+                .BindToLocalScale(rect);
         }
 
-        public static void DoSetImageColor(this Image image, bool instant, Color color, float duration, Ease ease)
+        public static MotionHandle DoSetImageColor(this Image image, bool instant, Color color, float duration, Ease ease)
         {
-            if (instant) image.color = color;
-            else Tween.Color(image, color, duration, ease, useUnscaledTime: true);
+            if (instant)
+            {
+                image.color = color;
+                return default;
+            }
+
+            return LMotion.Create(image.color, color, duration)
+                .WithEase(ease)
+                .BindToColor(image);
         }
     }
 }

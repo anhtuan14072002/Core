@@ -178,7 +178,7 @@ namespace Tuna.UI
             if (_contentRoot == null)
                 return;
 
-            _scaleMotion = LMotion.Create(_contentRoot.localScale, argetScale, _duration)
+            _scaleMotion = LMotion.Create(_contentRoot.localScale, targetScale, _duration)
                 .WithEase(ease)
                 .WithScheduler(MotionScheduler.UpdateIgnoreTimeScale)
                 .BindToLocalScale(_contentRoot);

@@ -316,6 +316,22 @@ namespace RogueliteToolkit.SkillTree.Editor
 
         private sealed class SkillTreeGraphView : GraphView
         {
+            private const string ClipboardPrefix = "Tuna.SkillTree.Nodes:";
+
+            [Serializable]
+            private sealed class NodeClipboard
+            {
+                public string node;
+                public string data;
+                public Vector2 position;
+            }
+
+            [Serializable]
+            private sealed class GraphClipboard
+            {
+                public NodeClipboard[] nodes;
+            }
+
             private readonly SkillTreeAuthoringWindow _window;
             private readonly Dictionary<SkillNodeAuthoring, SkillNodeElement> _nodes = new();
             private readonly MiniMap _miniMap;
@@ -351,6 +367,83 @@ namespace RogueliteToolkit.SkillTree.Editor
                 Add(_miniMap);
                 RegisterCallback<GeometryChangedEvent>(_ => PositionMiniMap());
                 graphViewChanged = OnGraphViewChanged;
+                serializeGraphElements = SerializeNodes;
+                canPasteSerializedData = data => TryReadClipboard(data, out _);
+                unserializeAndPaste = PasteNodes;
+            }
+
+            private string SerializeNodes(IEnumerable<GraphElement> elements)
+            {
+                NodeClipboard[] copied = elements.OfType<SkillNodeElement>().Select(element =>
+                    new NodeClipboard
+                    {
+                        node = JsonUtility.ToJson(element.Authoring),
+                        data = element.Authoring.Data != null
+                            ? JsonUtility.ToJson(element.Authoring.Data) : null,
+                        position = element.Authoring.RectTransform.anchoredPosition
+                    }).ToArray();
+                return copied.Length == 0 ? string.Empty :
+                    ClipboardPrefix + JsonUtility.ToJson(new GraphClipboard { nodes = copied });
+            }
+
+            private static bool TryReadClipboard(string data, out GraphClipboard clipboard)
+            {
+                clipboard = null;
+                if (string.IsNullOrEmpty(data) || !data.StartsWith(ClipboardPrefix, StringComparison.Ordinal))
+                    return false;
+                try
+                {
+                    clipboard = JsonUtility.FromJson<GraphClipboard>(data.Substring(ClipboardPrefix.Length));
+                    return clipboard?.nodes != null && clipboard.nodes.Length > 0 &&
+                           clipboard.nodes.All(node => node != null && !string.IsNullOrEmpty(node.node));
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
+            }
+
+            private void PasteNodes(string operationName, string data)
+            {
+                if (_window._tree == null || !TryReadClipboard(data, out GraphClipboard clipboard))
+                    return;
+                Undo.IncrementCurrentGroup();
+                int group = Undo.GetCurrentGroup();
+                Undo.SetCurrentGroupName("Paste Skill Nodes");
+                List<SkillNodeAuthoring> pasted = new();
+                try
+                {
+                    foreach (NodeClipboard copied in clipboard.nodes)
+                    {
+                        SkillNodeAuthoring node = SkillTreeAuthoringUtility.CreateNode(
+                            _window._tree, copied.position + new Vector2(40f, -40f));
+                        JsonUtility.FromJsonOverwrite(copied.node, node);
+                        node.SetData(null);
+                        // Snapshot asset-backed settings too, so edits after Copy do not change the paste.
+                        if (!string.IsNullOrEmpty(copied.data))
+                            JsonUtility.FromJsonOverwrite(copied.data, node);
+                        string id = SkillTreeAuthoringUtility.GenerateUniqueId(_window._tree, node.Id);
+                        SkillTreeAuthoringUtility.SetNodeIdentity(node, id, node.DisplayName + " Copy", false);
+                        node.gameObject.name = id;
+                        EditorUtility.SetDirty(node);
+                        pasted.Add(node);
+                    }
+                    Undo.CollapseUndoOperations(group);
+                }
+                catch (Exception exception)
+                {
+                    Undo.RevertAllDownToGroup(group);
+                    Debug.LogException(exception);
+                }
+                _window.RebuildGraph();
+                ClearSelection();
+                foreach (SkillNodeAuthoring node in pasted)
+                {
+                    if (node != null && _nodes.TryGetValue(node, out SkillNodeElement element))
+                        AddToSelection(element);
+                }
+                FrameSelection();
+                Focus();
             }
 
             public override void AddToSelection(ISelectable selectable)
@@ -449,6 +542,13 @@ namespace RogueliteToolkit.SkillTree.Editor
                 if (evt.button != 0)
                     return;
                 VisualElement target = evt.target as VisualElement;
+                VisualElement input = target;
+                while (input != null && input != this && input is not IMGUIContainer &&
+                       !input.ClassListContains("unity-base-field") &&
+                       !input.ClassListContains("unity-text-input"))
+                    input = input.parent;
+                if (input == this)
+                    Focus();
                 while (target != null && target != this)
                 {
                     if (target.ClassListContains("skill-node-editor-input"))

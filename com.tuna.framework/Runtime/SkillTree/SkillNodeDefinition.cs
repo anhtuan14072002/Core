@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RogueliteToolkit.Effects;
+using RogueliteToolkit.Resources;
 using UnityEngine;
 
 namespace RogueliteToolkit.SkillTree
@@ -25,8 +26,7 @@ namespace RogueliteToolkit.SkillTree
         [SerializeField] private int[] _phaseEndLevels = Array.Empty<int>();
         [SerializeField, HideInInspector] private double[] _costs = Array.Empty<double>();
         [SerializeField] private SkillResourceCost[] _additionalCosts = Array.Empty<SkillResourceCost>();
-        [SerializeField] private SkillTreeResourcesType _costResourceType;
-        [SerializeField, HideInInspector] private SkillTreeResourcesType[] _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
+        [SerializeField] private ResourceDefinition _costResourceType;
         [SerializeField] private RequirementMode _incomingRequirementMode;
         [SerializeField, HideInInspector] private StatGameplayEffect[] _statEffects =
             Array.Empty<StatGameplayEffect>();
@@ -58,8 +58,7 @@ namespace RogueliteToolkit.SkillTree
             ? PhaseEndLevels[PhaseEndLevels.Count - 1] : LevelsPerPhase * PhaseCount;
         public IReadOnlyList<SkillResourceCost> AdditionalCosts => _data != null ? _data.AdditionalCosts : _additionalCosts;
         public IReadOnlyList<double> Costs => _data != null ? _data.Costs : _costs ?? Array.Empty<double>();
-        public SkillTreeResourcesType CostResourceType => _data != null ? _data.CostResourceType : 
-            _costResourceTypes != null && _costResourceTypes.Length > 0 ? _costResourceTypes[0] : _costResourceType;
+        public ResourceDefinition CostResourceType => _data != null ? _data.CostResourceType : _costResourceType;
         public RequirementMode IncomingRequirementMode => _incomingRequirementMode;
         public IReadOnlyList<StatGameplayEffect> StatEffects =>
             _data != null ? _data.StatEffects : _statEffects ?? Array.Empty<StatGameplayEffect>();
@@ -126,7 +125,6 @@ namespace RogueliteToolkit.SkillTree
             _nodeColor = SkillNodeColor.Blue;
             _color = UnityEngine.Color.white;
             _costs = Array.Empty<double>();
-            _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
             _statEffects = Array.Empty<StatGameplayEffect>();
             _effects = Array.Empty<GameplayEffect>();
         }
@@ -150,7 +148,7 @@ namespace RogueliteToolkit.SkillTree
                 : 0;
         }
 
-        public SkillTreeResourcesType GetCostResourceTypeForLevel(int level, int resourceIndex = 0)
+        public ResourceDefinition GetCostResourceTypeForLevel(int level, int resourceIndex = 0)
         {
             if (level < 1 || level > MaxLevel)
                 throw new ArgumentOutOfRangeException(nameof(level));
@@ -178,7 +176,7 @@ namespace RogueliteToolkit.SkillTree
         public void Configure(string id, string displayName, string description, Sprite icon,
             Vector2 position, int maxLevel, int[] costs, RequirementMode incomingRequirementMode,
             StatGameplayEffect[] statEffects, GameplayEffect[] effects,
-            SkillTreeResourcesType costResourceType = SkillTreeResourcesType.None, int phaseCount = 1,
+            ResourceDefinition costResourceType = null, int phaseCount = 1,
             Color? color = null, bool instantFreeUpgrade = false, SkillNodeColor nodeColor = SkillNodeColor.Blue)
             => Configure(id, displayName, description, icon, position, maxLevel,
                 costs == null ? null : Array.ConvertAll(costs, value => (double)value),
@@ -196,7 +194,7 @@ namespace RogueliteToolkit.SkillTree
             RequirementMode incomingRequirementMode,
             StatGameplayEffect[] statEffects,
             GameplayEffect[] effects,
-            SkillTreeResourcesType costResourceType = SkillTreeResourcesType.None,
+            ResourceDefinition costResourceType = null,
             int phaseCount = 1,
             Color? color = null,
             bool instantFreeUpgrade = false,
@@ -209,7 +207,6 @@ namespace RogueliteToolkit.SkillTree
             _nodeSize = SkillNodeSize.Small;
             _phaseEndLevels = Array.Empty<int>();
             _costResourceType = costResourceType;
-            _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
             _id = id?.Trim();
             _displayName = displayName;
             _description = description;

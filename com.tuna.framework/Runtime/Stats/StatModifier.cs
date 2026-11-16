@@ -11,12 +11,7 @@ namespace RogueliteToolkit.Stats
         public float Value { get; }
         public int Priority { get; }
 
-        public StatModifier(
-            string modifierId,
-            string sourceId,
-            StatModifierOperation operation,
-            float value,
-            int priority = 0)
+        public StatModifier(string modifierId, string sourceId, StatModifierOperation operation, float value, int priority = 0)
         {
             if (string.IsNullOrWhiteSpace(modifierId))
                 throw new ArgumentException("A stat modifier requires a stable modifier ID.", nameof(modifierId));

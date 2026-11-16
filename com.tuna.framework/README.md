@@ -52,6 +52,25 @@ from `0 -> saved stacks`, reconstructing modifiers rather than saving final stat
 
 ## Skill tree (profile state)
 
+### Resource definitions
+
+Create project resources with **Create > Roguelite Toolkit > Resource Definition**.
+Each asset contains its display name and icon. Assign these assets to the resource
+columns in Skill Node Data; adding a resource requires no changes to the package.
+`ResourceDefinition` lives in `RogueliteToolkit.Resources` and can also be referenced
+by shop prices, rewards, crafting recipes, and other game configuration.
+
+The editor assigns a positive integer `Id` from the asset's GUID on import. Keep
+the `.meta` file: renaming/moving the asset preserves its ID, while duplicating it
+creates a new ID. Builds validate IDs and reject collisions. Use `resource.Id` as
+the key in runtime balance dictionaries and saves; no resource-name lookup is needed.
+
+`ISkillPointWallet` now receives `ResourceDefinition` instead of the old enum.
+The consuming game still owns balances and implements grouped, all-or-nothing
+payment. Reuse scratch collections when grouping repeated resources by ID.
+`CanSpend(node, level)` and `TrySpend(node, level)` must use the same grouped costs.
+Resource assets contain configuration only, never player balances.
+
 `SkillTreeDefinition` contains nodes, connections, positions, requirements, costs,
 and effects. `SkillTreeState` contains only runtime levels.
 

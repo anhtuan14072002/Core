@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RogueliteToolkit.Effects;
+using RogueliteToolkit.Resources;
 using UnityEngine;
 
 namespace RogueliteToolkit.SkillTree.Authoring
@@ -35,7 +36,6 @@ namespace RogueliteToolkit.SkillTree.Authoring
                 _instantFreeUpgrade = InstantFreeUpgrade;
                 _nodeColor = NodeColor;
                 _costResourceType = CostResourceType;
-                _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
                 _additionalCosts = AdditionalCosts.ToArray();
                 _costs = CopyCosts();
                 _statEffects = CopyStatEffects();
@@ -67,10 +67,7 @@ namespace RogueliteToolkit.SkillTree.Authoring
         [SerializeField] private int[] _phaseEndLevels = Array.Empty<int>();
         [SerializeField] private double[] _costs = Array.Empty<double>();
         [SerializeField] private SkillResourceCost[] _additionalCosts = Array.Empty<SkillResourceCost>();
-        [SerializeField] private SkillTreeResourcesType _costResourceType;
-
-        [SerializeField, HideInInspector]
-        private SkillTreeResourcesType[] _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
+        [SerializeField] private ResourceDefinition _costResourceType;
 
         [SerializeField] private RequirementMode _incomingRequirementMode;
 
@@ -111,8 +108,7 @@ namespace RogueliteToolkit.SkillTree.Authoring
 
         public IReadOnlyList<double> Costs => _data != null ? _data.Costs : _costs ?? Array.Empty<double>();
 
-        public SkillTreeResourcesType CostResourceType => _data != null ? _data.CostResourceType :
-            _costResourceTypes != null && _costResourceTypes.Length > 0 ? _costResourceTypes[0] : _costResourceType;
+        public ResourceDefinition CostResourceType => _data != null ? _data.CostResourceType : _costResourceType;
 
         public RequirementMode IncomingRequirementMode => _incomingRequirementMode;
 
@@ -158,8 +154,6 @@ namespace RogueliteToolkit.SkillTree.Authoring
             Array.Resize(ref _costs, MaxLevel);
             for (int i = previousCosts; i < _costs.Length; i++)
                 _costs[i] = lastCost;
-            _costResourceType = CostResourceType;
-            _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
             if (_costs == null)
                 return;
             for (int i = 0; i < _costs.Length; i++)

@@ -7,9 +7,20 @@ namespace RogueliteToolkit.Stats
     {
         private readonly Dictionary<string, StatModifier> _modifiers =
             new(StringComparer.Ordinal);
+        private float _baseValue;
+        private float _cachedValue;
+        private bool _dirty = true;
 
         public StatDefinition Definition { get; }
-        public float BaseValue { get; set; }
+        public float BaseValue
+        {
+            get => _baseValue;
+            set
+            {
+                _baseValue = value;
+                _dirty = true;
+            }
+        }
 
         public RuntimeStat(StatDefinition definition, float baseValue)
         {
@@ -20,11 +31,15 @@ namespace RogueliteToolkit.Stats
         public void AddOrUpdateModifier(StatModifier modifier)
         {
             _modifiers[modifier.ModifierId] = modifier;
+            _dirty = true;
         }
 
         public bool RemoveModifier(string modifierId)
         {
-            return !string.IsNullOrWhiteSpace(modifierId) && _modifiers.Remove(modifierId);
+            if (string.IsNullOrWhiteSpace(modifierId) || !_modifiers.Remove(modifierId))
+                return false;
+            _dirty = true;
+            return true;
         }
 
         public bool RemoveModifiersFromSource(string sourceId)
@@ -45,10 +60,21 @@ namespace RogueliteToolkit.Stats
                 return false;
             for (int i = 0; i < removals.Count; i++)
                 _modifiers.Remove(removals[i]);
+            _dirty = true;
             return true;
         }
 
         public float CalculateValue()
+        {
+            if (_dirty)
+            {
+                _cachedValue = CalculateUnclampedValue();
+                _dirty = false;
+            }
+            return Definition.Clamp(_cachedValue);
+        }
+
+        private float CalculateUnclampedValue()
         {
             float flat = 0f;
             float percent = 0f;
@@ -79,10 +105,9 @@ namespace RogueliteToolkit.Stats
                 }
             }
 
-            float value = hasOverride
+            return hasOverride
                 ? selectedOverride.Value
                 : (BaseValue + flat) * (1f + percent) * multiplier;
-            return Definition.Clamp(value);
         }
 
         private static bool IsHigherPriority(StatModifier candidate, StatModifier current)

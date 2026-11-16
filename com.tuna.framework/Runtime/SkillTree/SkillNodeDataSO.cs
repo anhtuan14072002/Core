@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RogueliteToolkit.Effects;
+using RogueliteToolkit.Resources;
 using UnityEngine;
 
 namespace RogueliteToolkit.SkillTree
@@ -26,8 +27,7 @@ namespace RogueliteToolkit.SkillTree
         [SerializeField] private int[] _phaseEndLevels = Array.Empty<int>();
         [SerializeField] private double[] _costs = Array.Empty<double>();
         [SerializeField] private SkillResourceCost[] _additionalCosts = Array.Empty<SkillResourceCost>();
-        [SerializeField] private SkillTreeResourcesType _costResourceType;
-        [SerializeField, HideInInspector] private SkillTreeResourcesType[] _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
+        [SerializeField] private ResourceDefinition _costResourceType;
         [SerializeField] private StatGameplayEffect[] _statEffects = Array.Empty<StatGameplayEffect>();
         [SerializeReference] private GameplayEffect[] _effects = Array.Empty<GameplayEffect>();
 
@@ -51,8 +51,7 @@ namespace RogueliteToolkit.SkillTree
             ? PhaseEndLevels[PhaseEndLevels.Count - 1] : LevelsPerPhase * PhaseCount;
         public IReadOnlyList<SkillResourceCost> AdditionalCosts => _additionalCosts;
         public IReadOnlyList<double> Costs => _costs ?? Array.Empty<double>();
-        public SkillTreeResourcesType CostResourceType => 
-            _costResourceTypes != null && _costResourceTypes.Length > 0 ? _costResourceTypes[0] : _costResourceType;
+        public ResourceDefinition CostResourceType => _costResourceType;
         public IReadOnlyList<StatGameplayEffect> StatEffects => _statEffects ?? Array.Empty<StatGameplayEffect>();
         public IReadOnlyList<GameplayEffect> Effects => _effects ?? Array.Empty<GameplayEffect>();
 
@@ -74,7 +73,6 @@ namespace RogueliteToolkit.SkillTree
             _costs = source.Costs.ToArray();
             _additionalCosts = source.AdditionalCosts.ToArray();
             _costResourceType = source.CostResourceType;
-            _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
             _statEffects = source.StatEffects.ToArray();
             _effects = source.Effects.ToArray();
         }
@@ -91,8 +89,6 @@ namespace RogueliteToolkit.SkillTree
             Array.Resize(ref _costs, MaxLevel);
             for (int i = previousCosts; i < _costs.Length; i++)
                 _costs[i] = lastCost;
-            _costResourceType = CostResourceType;
-            _costResourceTypes = Array.Empty<SkillTreeResourcesType>();
             if (_costs != null)
                 for (int i = 0; i < _costs.Length; i++)
                     _costs[i] = Math.Max(0, _costs[i]);

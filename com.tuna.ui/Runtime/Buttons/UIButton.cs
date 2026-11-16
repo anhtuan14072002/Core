@@ -1,9 +1,9 @@
-﻿using PrimeTween;
+using LitMotion;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace Core
+namespace WZ
 {
     [RequireComponent(typeof(Image))]
     public class UIButton : UIBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
@@ -18,6 +18,8 @@ namespace Core
         [SerializeField] private Button _button;
         private Image _image;
         private RectTransform _rectTransform;
+        private MotionHandle _scaleMotion;
+        private MotionHandle _colorMotion;
 
 #if UNITY_EDITOR
         protected override void Reset()
@@ -36,19 +38,26 @@ namespace Core
         protected override void OnEnable()
         {
             base.OnEnable();
-            UpdateButtonState(true);
+            UpdateButtonState();
+        }
+
+        protected override void OnDisable()
+        {
+            _scaleMotion.TryCancel();
+            _colorMotion.TryCancel();
+            base.OnDisable();
         }
 
         public void OnPointerDown(PointerEventData eventData)
         {
             if (!_button.interactable) return;
-            _rectTransform.DoScaleRect(false, _scalePress, _duration, Ease.OutQuad);
+            AnimateScale(_scalePress, Ease.OutQuad);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
             if (!_button.interactable) return;
-            _rectTransform.DoScaleRect(false, _scaleNormal, _duration, Ease.OutBack);
+            AnimateScale(_scaleNormal, Ease.OutBack);
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -56,22 +65,23 @@ namespace Core
             if (!_button.interactable) return;
         }
 
-        private void UpdateButtonState(bool instant)
+        private void UpdateButtonState()
         {
-            if (_button.interactable)
-            {
-                _image.DoSetImageColor(instant, _colorNormal, _duration, Ease.Linear);
-                _rectTransform.DoScaleRect(instant, _scaleNormal, _duration, Ease.Linear);
-            }
-            else
-            {
-                _image.DoSetImageColor(instant, _colorDisable, _duration, Ease.Linear);
-                _rectTransform.DoScaleRect(instant, _scaleNormal, _duration, Ease.Linear);
-            }
+            _colorMotion.TryCancel();
+            var color = _button.interactable ? _colorNormal : _colorDisable;
+            _colorMotion = _image.DoSetImageColor(false, color, _duration, Ease.Linear);
+            AnimateScale(_scaleNormal, Ease.Linear);
         }
+
+        private void AnimateScale(Vector3 scale, Ease ease)
+        {
+            _scaleMotion.TryCancel();
+            _scaleMotion = _rectTransform.DoScaleRect(false, scale, _duration, ease);
+        }
+
         public void RefreshButtonState()
         {
-            UpdateButtonState(false);
+            UpdateButtonState();
         }
     }
 }

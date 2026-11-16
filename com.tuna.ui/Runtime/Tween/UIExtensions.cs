@@ -1,34 +1,24 @@
-﻿using PrimeTween;
+using LitMotion;
+using LitMotion.Extensions;
 using UnityEngine;
 
 namespace Core
 {
     public static class UIExtensions
     {
-        public static Tween TweenAnchoredY(this RectTransform rt, float targetY, float duration, Ease ease)
+        public static MotionHandle TweenAnchoredY(this RectTransform rt, float targetY, float duration, Ease ease)
         {
-            float startY = rt.anchoredPosition.y;
-            return Tween.Custom(
-                startY, targetY, duration, value =>
-                {
-                    var pos = rt.anchoredPosition;
-                    pos.y = value;
-                    rt.anchoredPosition = pos;
-                }, ease
-            );
+            return LMotion.Create(rt.anchoredPosition.y, targetY, duration)
+                .WithEase(ease)
+                .BindToAnchoredPositionY(rt);
         }
 
-        public static Tween TweenAnchoredX(this RectTransform rt, float targetX, float duration, Ease ease, int cycles, CycleMode cycleMode)
+        public static MotionHandle TweenAnchoredX(this RectTransform rt, float targetX, float duration, Ease ease, int cycles, LoopType loopType)
         {
-            float startX = rt.anchoredPosition.x;
-            return Tween.Custom(
-                startX, targetX, duration, value =>
-                {
-                    var pos = rt.anchoredPosition;
-                    pos.x = value;
-                    rt.anchoredPosition = pos;
-                }, ease, cycles, cycleMode
-            );
+            return LMotion.Create(rt.anchoredPosition.x, targetX, duration)
+                .WithEase(ease)
+                .WithLoops(cycles, loopType)
+                .BindToAnchoredPositionX(rt);
         }
     }
 }

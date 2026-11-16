@@ -66,11 +66,10 @@ namespace RogueliteToolkit.SkillTree
 
             for (int i = 0; i < node.CostResourceCount; i++)
             {
-                double cost = node.GetCostForLevel(currentLevel + 1, i);
-                if (cost <= 0) continue;
-                if (context == null || !context.TryGet(out ISkillPointWallet wallet) ||
-                    !wallet.CanSpend(cost, node.GetCostResourceTypeForLevel(currentLevel + 1, i)))
-                    return false;
+                if (node.GetCostForLevel(currentLevel + 1, i) <= 0)
+                    continue;
+                return context != null && context.TryGet(out ISkillPointWallet wallet) &&
+                    wallet.CanSpend(node, currentLevel + 1);
             }
             return true;
         }
